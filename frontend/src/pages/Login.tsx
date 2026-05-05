@@ -89,12 +89,11 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col justify-center items-center p-4 relative overflow-hidden">
-      <div
-        className="absolute inset-0 opacity-[0.03]"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h60v60H0z' fill='none' stroke='%23000' stroke-width='.5'/%3E%3C/svg%3E")`,
-        }}
-      />
+      {/* Premium Matte Background */}
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-accent/5 blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-[120px]" />
+      </div>
 
 
       <Link
@@ -108,7 +107,7 @@ export default function Login() {
         <LanguageSwitcher />
       </div>
 
-      <div className="w-full max-w-md bg-card border rounded-2xl p-8 surface-elevated z-10 animate-fade-in shadow-xl focus-within:ring-1 focus-within:ring-accent transition-all duration-300">
+      <div className="w-full max-w-md bg-background border-2 border-border/10 rounded-[2rem] p-8 z-10 shadow-[0_20px_50px_rgba(0,0,0,0.08)] transition-all duration-300">
         <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-6">
           <KeyRound className="w-6 h-6 text-accent" />
         </div>
@@ -183,11 +182,11 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium mt-6 hover:opacity-90 transition-opacity active:scale-[0.99] disabled:opacity-70 disabled:pointer-events-none flex justify-center items-center gap-2"
+            className="w-full py-2.5 rounded-xl bg-accent text-accent-foreground text-xs font-bold mt-6 hover:opacity-90 transition-all shadow-lg shadow-accent/10 active:scale-[0.98] disabled:opacity-70 disabled:pointer-events-none flex justify-center items-center gap-2"
           >
             {loading ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" /> {t('login.signingIn')}
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> {t('login.signingIn')}
               </>
             ) : (
               t('login.signIn')

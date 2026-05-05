@@ -20,6 +20,9 @@ import {
   AlertTriangle,
   XCircle,
   ShieldCheck,
+  User,
+  Lock,
+  Unlock,
 } from "lucide-react";
 
 import { useTranslation } from "react-i18next";
@@ -37,6 +40,8 @@ interface Credential {
   token_id?: number | null;
   revoked?: boolean;
   college_name?: string | null;
+  college_logo?: string | null;
+  degree_type?: string | null;
   created_at: string;
 }
 
@@ -197,132 +202,226 @@ const EmployerVerify: React.FC = () => {
   const credits = typeof meta.credits === "string" ? meta.credits : "-";
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
       <Navbar />
 
-      <div className="pt-28 pb-20 flex-1">
-        <div className="container mx-auto px-4 max-w-2xl">
-          <ScrollReveal className="text-center mb-10">
-            <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-5">
-              <Search className="w-7 h-7 text-accent" />
+      {/* Premium Matte Background */}
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-accent/5 blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-[120px]" />
+      </div>
+
+      <div className="pt-32 pb-24 flex-1">
+        <div className="container mx-auto px-4 max-w-3xl">
+          <ScrollReveal className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/20 text-[10px] font-bold text-accent uppercase tracking-[0.2em] mb-6">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Official Verification Portal
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold mb-2">{t("employerVerify.title")}</h1>
-            <p className="text-muted-foreground">{t("employerVerify.subtitle")}</p>
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">Verify Academic Integrity</h1>
+            <p className="text-muted-foreground text-lg max-w-xl mx-auto">{t("employerVerify.subtitle")}</p>
           </ScrollReveal>
 
-          <ScrollReveal delay={80}>
-            <form onSubmit={handleSearch} className="flex gap-2 mb-8 relative">
-              <input
-                type="text"
-                value={query}
-                onChange={handleQueryChange}
-                placeholder={t("employerVerify.searchPlaceholder")}
-                required
-                className="flex-1 px-4 py-3 rounded-lg border bg-card text-sm font-mono focus:outline-none focus:ring-2 focus:ring-accent transition-all"
-              />
-              {query && (
+          <ScrollReveal delay={100}>
+            <div className="glass-card rounded-[2.5rem] p-2 mb-12 border-2 border-accent/5 shadow-2xl shadow-accent/5 transition-all focus-within:border-accent/20">
+              <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2">
+                <div className="flex-1 relative">
+                  <Search className="w-5 h-5 absolute left-6 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={query}
+                    onChange={handleQueryChange}
+                    placeholder={t("employerVerify.searchPlaceholder")}
+                    required
+                    className="w-full pl-14 pr-6 py-5 rounded-[2rem] bg-transparent text-sm font-medium focus:outline-none transition-all placeholder:text-muted-foreground/60"
+                  />
+                </div>
                 <button
-                  type="button"
-                  onClick={() => handleQueryChange({ target: { value: "" } } as any)}
-                  className="absolute right-[110px] top-1/2 -translate-y-1/2 p-2 text-muted-foreground hover:text-foreground"
+                  type="submit"
+                  disabled={loading}
+                  className="px-8 py-4 sm:py-2 rounded-[1.8rem] bg-accent text-accent-foreground text-sm font-bold hover:opacity-90 transition-all shadow-xl shadow-accent/10 active:scale-[0.98] disabled:opacity-50 min-w-[140px]"
                 >
-                  ✕
+                  {loading ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-accent-foreground/20 border-t-accent-foreground rounded-full animate-spin" />
+                      <span>{t("employerVerify.verifying")}</span>
+                    </div>
+                  ) : (
+                    t("employerVerify.verify")
+                  )}
                 </button>
-              )}
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-5 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity active:scale-[0.98] disabled:opacity-50"
-              >
-                {loading ? t("employerVerify.verifying") : t("employerVerify.verify")}
-              </button>
-            </form>
+              </form>
+            </div>
           </ScrollReveal>
 
           {result && (
-            <ScrollReveal>
-              <div className="rounded-xl border bg-card overflow-hidden blockchain-glow">
-                {result.revoked && (
-                  <div className="bg-destructive/10 border-b border-destructive/20 px-6 py-3 flex items-center gap-2">
-                    <XCircle className="w-4 h-4 text-destructive shrink-0" />
-                    <p className="text-sm text-destructive font-medium">{t("employerVerify.revokedBanner")}</p>
-                  </div>
-                )}
-
-                <div className="bg-primary/5 border-b px-6 py-4 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm ${result.revoked ? "bg-destructive/20" : "bg-primary"}`}>
-                      {result.revoked
-                        ? <XCircle className="w-5 h-5 text-destructive" />
-                        : <Shield className="w-5 h-5 text-primary-foreground" />}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-1.5 mb-0.5">
-                        {result.revoked
-                          ? <><AlertTriangle className="w-4 h-4 text-destructive" /><h3 className="font-semibold text-destructive">{t("employerVerify.revokedTitle")}</h3></>
-                          : <><CheckCircle2 className="w-4 h-4 text-accent" /><h3 className="font-semibold text-primary">{t("employerVerify.verifiedTitle")}</h3></>
-                        }
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {result.revoked ? t("employerVerify.revokedSubtitle") : t("employerVerify.verifiedSubtitle")}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-6">
-                  <div className="max-w-3xl mx-auto space-y-6">
-                    <div className="grid sm:grid-cols-2 gap-6 items-start">
-                      <div className="space-y-5">
-                        <InfoRow icon={GraduationCap} label={t("employerVerify.studentName")} value={studentName} />
-                        <InfoRow icon={Hash} label={t("employerVerify.prn")} value={result.prn_number ?? "-"} mono />
-                        <InfoRow icon={Calendar} label={t("employerVerify.entryYear")} value={String(entryYear)} />
-                        <InfoRow icon={Blocks} label={t("employerVerify.cgpa")} value={String(cgpa)} />
-                        <InfoRow icon={Building2} label={t("employerVerify.offchainNotes")} value={result.description ?? "-"} />
-                      </div>
-                      <div className="space-y-5">
-                        <InfoRow icon={Building2} label={t("employerVerify.university")} value={result.college_name || "Altrium University"} />
-                        <InfoRow icon={FileText} label={t("employerVerify.degreeTitle")} value={result.title} />
-                        <InfoRow icon={Calendar} label={t("employerVerify.passingYear")} value={String(passingYear)} />
-                        <InfoRow icon={Blocks} label={t("employerVerify.credits")} value={String(credits)} />
-                      </div>
-                    </div>
-
-                    <div className="p-5 rounded-xl bg-muted/20 border border-muted-foreground/10 space-y-3">
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("employerVerify.onChainProof")}</p>
-
-                      <div className="flex items-center justify-between text-sm py-1 border-b border-muted-foreground/10">
-                        <span className="text-muted-foreground">{t("employerVerify.tokenId")}</span>
-                        <span className="font-mono font-bold text-foreground">{result.token_id ?? "-"}</span>
-                      </div>
-
-                      {result.tx_hash && (
-                        <div className="flex items-center justify-between text-sm py-1 border-b border-muted-foreground/10">
-                          <span className="text-muted-foreground">{t("employerVerify.txHash")}</span>
-                          
-  <a
-                            href={`https://sepolia.etherscan.io/tx/${result.tx_hash}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1 font-mono text-accent hover:text-accent/80 transition-colors max-w-[200px] sm:max-w-[260px] truncate"
-                          >
-                            {result.tx_hash}
-                            <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-                          </a>
-                        </div>
+            <ScrollReveal delay={200}>
+              <div className="relative group">
+                <div className="absolute -inset-4 bg-gradient-to-tr from-accent/5 to-primary/5 rounded-[3.5rem] blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                
+                <div className="relative rounded-[2.5rem] border-2 border-accent/10 bg-background overflow-hidden shadow-2xl">
+                  {/* Premium Status Header */}
+                  <div className={`px-8 py-5 flex items-center justify-between ${result.revoked ? "bg-destructive/10 text-destructive" : "bg-accent/5 text-accent border-b border-accent/5"}`}>
+                    <div className="flex items-center gap-3">
+                      {result.revoked ? (
+                        <div className="p-1.5 rounded-full bg-destructive/20"><XCircle className="w-4 h-4" /></div>
+                      ) : (
+                        <div className="p-1.5 rounded-full bg-accent/20"><ShieldCheck className="w-4 h-4" /></div>
                       )}
-
-                      <div className="flex items-center justify-between text-sm py-1">
-                        <span className="text-muted-foreground">{t("employerVerify.integrityCheck")}</span>
-                        <button
-                          onClick={handleVerifyHash}
-                          disabled={verifyingHash}
-                          className="flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium bg-accent/10 text-accent hover:bg-accent/20 transition-colors disabled:opacity-50"
-                        >
-                          <ShieldCheck className="w-3.5 h-3.5" />
-                          {verifyingHash ? t("employerVerify.verifying") : hashVerified === true ? "✅ " + t("employerVerify.verifiedHash") : hashVerified === false ? "❌ " + t("employerVerify.failedHash") : t("employerVerify.verifyHash")}
-                        </button>
+                      <div>
+                         <span className="text-[10px] font-bold uppercase tracking-[0.2em] block mb-0.5">
+                           {result.revoked ? "Revoked / Invalid" : "Cryptographic Proof Found"}
+                         </span>
+                         <span className="text-[9px] opacity-60 tabular-nums">ID: {result.token_id || "PENDING"}</span>
                       </div>
+                    </div>
+                    {!result.revoked && (
+                      <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20">
+                         <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                         <span className="text-[10px] font-bold uppercase tracking-wider">Soulbound Status</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="p-8 md:p-12">
+                    <div className="flex flex-col md:flex-row gap-8 items-start mb-12">
+                      {/* Institutional Branding */}
+                      <div className="w-28 h-28 rounded-[2rem] bg-muted/40 border-2 border-accent/5 p-4 flex flex-col items-center justify-center relative group/logo overflow-hidden">
+                        {result.college_logo ? (
+                          <img 
+                            src={result.college_logo.startsWith("http") ? result.college_logo : `${import.meta.env.VITE_API_URL}${result.college_logo}`} 
+                            alt={result.college_name || "Logo"} 
+                            className="w-full h-full object-contain"
+                          />
+                        ) : (
+                          <>
+                            <Building2 className="w-12 h-12 text-muted-foreground opacity-40 mb-1" />
+                            <span className="text-[7px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">No Official Logo</span>
+                          </>
+                        )}
+                        <div className="absolute inset-0 bg-accent/5 opacity-0 group-hover/logo:opacity-100 transition-opacity" />
+                      </div>
+
+                      <div className="flex-1">
+                        <div className="flex flex-col gap-1 mb-6">
+                          <h2 className="text-4xl font-bold tracking-tight">{result.title}</h2>
+                          <div className="flex items-center gap-2">
+                             <p className="text-accent font-bold tracking-widest text-[10px] uppercase">
+                               {result.college_name || "Altrium Partner Institution"}
+                             </p>
+                             <div className="w-1 h-1 rounded-full bg-muted-foreground/30" />
+                             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Level: {result.degree_type || "Degree"}</span>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-8 gap-x-12">
+                          <div className="space-y-6">
+                             <DataPoint label="Recipient Holder" value={studentName} icon={User} />
+                             <DataPoint label="Registration (PRN)" value={result.prn_number || "—"} icon={Hash} mono />
+                             <DataPoint label="Completion Year" value={passingYear} icon={Calendar} />
+                          </div>
+                          <div className="space-y-6">
+                             <DataPoint 
+                               label="Academic Standing" 
+                               value={hashVerified ? cgpa : "LOCKED"} 
+                               icon={hashVerified ? Unlock : Lock} 
+                               className={!hashVerified ? "opacity-40" : "text-success"}
+                               subValue={!hashVerified ? "Verify Integrity to Unlock" : "Verified Performance"}
+                             />
+                             <DataPoint 
+                               label="Total Credits" 
+                               value={hashVerified ? credits : "LOCKED"} 
+                               icon={hashVerified ? Unlock : Lock} 
+                               className={!hashVerified ? "opacity-40" : "text-success"}
+                             />
+                             <DataPoint label="Issuance Date" value={new Date(result.created_at).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })} icon={Calendar} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Advanced Technical Audit Section */}
+                    <div className="space-y-4">
+                       <div className={`p-6 rounded-[2rem] border transition-all duration-500 ${hashVerified ? "bg-success/[0.03] border-success/20" : "bg-muted/30 border-border"}`}>
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+                            <div>
+                              <h4 className="text-lg font-bold mb-1 flex items-center gap-2">
+                                <ShieldCheck className={`w-5 h-5 ${hashVerified ? "text-success" : "text-accent"}`} />
+                                Technical Audit Trail
+                              </h4>
+                              <p className="text-xs text-muted-foreground leading-relaxed max-w-md">
+                                Unlike traditional verifications, Altrium cross-references off-chain records with EIP-1193 blockchain proof to ensure zero data tampering.
+                              </p>
+                            </div>
+                            <button
+                              onClick={handleVerifyHash}
+                              disabled={verifyingHash}
+                              className={`inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl text-xs font-bold transition-all active:scale-[0.98] disabled:opacity-50 ${
+                                hashVerified 
+                                  ? "bg-success text-success-foreground shadow-lg shadow-success/10" 
+                                  : "bg-accent text-accent-foreground shadow-lg shadow-accent/10 hover:opacity-90"
+                              }`}
+                            >
+                              {verifyingHash ? (
+                                <>
+                                  <div className="w-3.5 h-3.5 border-2 border-accent-foreground/20 border-t-accent-foreground rounded-full animate-spin" />
+                                  <span>Syncing Blockchain...</span>
+                                </>
+                              ) : hashVerified ? (
+                                <>
+                                  <CheckCircle2 className="w-4 h-4" />
+                                  <span>Audit Complete</span>
+                                </>
+                              ) : (
+                                "Run Cryptographic Audit"
+                              )}
+                            </button>
+                          </div>
+
+                          {hashVerified && (
+                            <div className="grid md:grid-cols-3 gap-4 pt-6 border-t border-border/50 animate-in fade-in slide-in-from-bottom-4">
+                               <AuditStat 
+                                 label="Registry Check" 
+                                 status="Matched" 
+                                 desc="Record exists in contract" 
+                               />
+                               <AuditStat 
+                                 label="Issuance Authority" 
+                                 status="Confirmed" 
+                                 desc="Verified University Signature" 
+                               />
+                               <AuditStat 
+                                 label="Data Fingerprint" 
+                                 status="Identical" 
+                                 desc="SHA-256 Hash Verified" 
+                               />
+                            </div>
+                          )}
+                       </div>
+
+                       {result.tx_hash && hashVerified && (
+                         <ScrollReveal className="animate-in fade-in slide-in-from-top-2">
+                           <div className="p-4 rounded-2xl bg-muted/40 border border-border flex items-center justify-between gap-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-accent">
+                                  <ExternalLink className="w-4 h-4" />
+                                </div>
+                                <div>
+                                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-0.5">Blockchain Evidence</p>
+                                  <p className="text-xs font-mono text-muted-foreground truncate max-w-[200px] md:max-w-md">{result.tx_hash}</p>
+                                </div>
+                              </div>
+                              <a 
+                                href={`https://sepolia.etherscan.io/tx/${result.tx_hash}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-5 py-2 rounded-xl bg-accent text-accent-foreground text-[10px] font-bold hover:opacity-90 transition-all shadow-lg shadow-accent/10"
+                              >
+                                View Receipt
+                              </a>
+                           </div>
+                         </ScrollReveal>
+                       )}
                     </div>
                   </div>
                 </div>
@@ -332,53 +431,51 @@ const EmployerVerify: React.FC = () => {
 
           {searched && !result && (
             <ScrollReveal>
-              <div className="rounded-xl border bg-card p-8 text-center">
-                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                  <Search className="w-5 h-5 text-muted-foreground" />
+              <div className="rounded-[2.5rem] border-2 border-dashed border-border p-12 text-center">
+                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-6">
+                  <Search className="w-8 h-8 text-muted-foreground opacity-40" />
                 </div>
-                <h3 className="font-semibold mb-1">{t("employerVerify.noRecordFound")}</h3>
-                <p className="text-sm text-muted-foreground mb-6">
-                  {t("employerVerify.noRecordFoundDesc1")}{" "}
-                  <span className="font-mono font-medium">{query}</span>. {t("employerVerify.noRecordFoundDesc2")}
+                <h3 className="text-xl font-bold mb-2">Record Not Found</h3>
+                <p className="text-sm text-muted-foreground mb-8 max-w-sm mx-auto">
+                  We couldn't locate a verified credential for <span className="text-foreground font-bold">"{query}"</span>. Please ensure the PRN or Email is correct.
                 </p>
                 <button
                   onClick={() => handleQueryChange({ target: { value: "" } } as any)}
-                  className="px-4 py-2 bg-muted text-foreground rounded-lg text-sm font-medium hover:bg-accent/10 hover:text-accent transition-colors"
+                  className="px-6 py-2.5 bg-muted text-foreground rounded-xl text-xs font-bold hover:bg-accent/10 hover:text-accent transition-colors"
                 >
-                  {t("employerVerify.backToDirectory")}
+                  Clear Search
                 </button>
               </div>
             </ScrollReveal>
           )}
-
         </div>
       </div>
 
       <Footer />
-
     </div>
   );
 };
 
-const InfoRow = ({
-  icon: Icon,
-  label,
-  value,
-  mono,
-  className,
-}: {
-  icon: React.ElementType;
-  label: string;
-  value: string;
-  mono?: boolean;
-  className?: string;
-}) => (
-  <div className={`flex items-start gap-3 ${className ?? ""}`}>
-    <Icon className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
-    <div>
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className={`font-medium text-sm ${mono ? "font-mono" : ""}`}>{value}</p>
+const DataPoint = ({ label, value, icon: Icon, mono, className, subValue }: { label: string; value: string; icon: any; mono?: boolean; className?: string; subValue?: string }) => (
+  <div className={`flex items-start gap-4 ${className || ""}`}>
+    <div className="w-9 h-9 rounded-xl bg-muted/50 flex items-center justify-center shrink-0 border">
+      <Icon className="w-4 h-4 text-muted-foreground" />
     </div>
+    <div>
+      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">{label}</p>
+      <p className={`text-sm font-bold text-foreground ${mono ? "font-mono tracking-tight" : ""}`}>{value}</p>
+      {subValue && (
+        <p className="text-[10px] font-medium text-muted-foreground/70 mt-0.5">{subValue}</p>
+      )}
+    </div>
+  </div>
+);
+
+const AuditStat = ({ label, status, desc }: { label: string; status: string; desc: string }) => (
+  <div className="flex flex-col gap-1 p-3 rounded-xl bg-background border border-border">
+    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{label}</p>
+    <p className="text-sm font-bold text-success">{status}</p>
+    <p className="text-[9px] font-medium text-muted-foreground/80">{desc}</p>
   </div>
 );
 

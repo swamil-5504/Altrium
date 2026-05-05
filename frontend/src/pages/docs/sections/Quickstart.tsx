@@ -82,8 +82,7 @@ VITE_CONTRACT_REGISTRY_ADDRESS=0x...
 VITE_RPC_URL=https://sepolia.infura.io/v3/YOUR_INFURA_KEY
 VITE_WEB3_PROVIDER_URI=https://sepolia.infura.io/v3/YOUR_INFURA_KEY
 VITE_REGISTRY_ADDRESS=0x...
-VITE_REOWN_PROJECT_ID=your_reown_projectid
-VITE_TELEGRAM_BOT_USERNAME=Altrium_Bot`}
+VITE_REOWN_PROJECT_ID=your_reown_projectid`}
         />
       </Sub>
 

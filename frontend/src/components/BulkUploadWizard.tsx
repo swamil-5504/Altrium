@@ -183,88 +183,101 @@ const BulkUploadWizard: React.FC<Props> = ({ onCommitted }) => {
   }, [matchResult, deselected]);
 
   return (
-    <div className="rounded-xl border bg-card overflow-hidden">
-      <div className="p-4 border-b bg-muted/30 flex items-center justify-between">
-        <div>
-          <div className="text-sm text-muted-foreground">Bulk Mint Wizard</div>
-          <div className="text-base font-semibold">
-            {step === "select-type" && "Step 1 — Pick degree type"}
-            {step === "review-live" && `Step 2 — Live requests (${degreeType})`}
-            {step === "review-match" && "Step 3 — Review PRN matches"}
-            {step === "result" && "Step 4 — Done"}
+    <div className="glass-card rounded-[2rem] overflow-hidden border border-accent/10 shadow-xl shadow-accent/5 transition-all">
+      <div className="p-6 border-b bg-muted/20 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="p-2.5 rounded-2xl bg-accent/10 text-accent">
+            <Upload className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent mb-0.5">Ingestion Wizard</div>
+            <div className="text-lg font-bold">
+              {step === "select-type" && "Select Degree Category"}
+              {step === "review-live" && `Upload Official PDFs (${degreeType})`}
+              {step === "review-match" && "Review Matches"}
+              {step === "result" && "Upload Complete"}
+            </div>
           </div>
         </div>
         {step !== "select-type" && (
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border hover:bg-muted transition"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest border border-border hover:bg-muted transition-all"
             onClick={resetWizard}
           >
-            <RotateCcw className="w-3 h-3" />
+            <RotateCcw className="w-3 h-3 text-muted-foreground" />
             Restart
           </button>
         )}
       </div>
 
-      <div className="p-5">
+      <div className="p-8">
+        {/* Minimal Progress Indicator */}
+        <div className="flex items-center gap-1 mb-8 max-w-[200px]">
+          <div className={`h-1 flex-1 rounded-full transition-all duration-500 ${["select-type", "review-live", "review-match", "result"].indexOf(step) >= 0 ? "bg-accent" : "bg-muted"}`} />
+          <div className={`h-1 flex-1 rounded-full transition-all duration-500 ${["review-live", "review-match", "result"].indexOf(step) >= 0 ? "bg-accent" : "bg-muted"}`} />
+          <div className={`h-1 flex-1 rounded-full transition-all duration-500 ${["review-match", "result"].indexOf(step) >= 0 ? "bg-accent" : "bg-muted"}`} />
+          <div className={`h-1 flex-1 rounded-full transition-all duration-500 ${step === "result" ? "bg-accent" : "bg-muted"}`} />
+        </div>
         {step === "select-type" && (
-          <div>
-            <p className="text-sm text-muted-foreground mb-4">
-              Pick the degree type you're issuing in this batch. The wizard will load all
-              outstanding student requests of that type from your college and let you import
-              the matching PDF cohort.
+          <>
+            <p className="text-sm text-muted-foreground mb-8 leading-relaxed max-w-2xl">
+              Match official university-issued PDFs with student records using <b>PRN (Permanent Registration Number)</b>.
+              Only verified college documents will be committed to the on-chain issuance queue.
             </p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {DEGREE_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
                   type="button"
                   onClick={() => handleSelectType(opt.value)}
-                  className="group p-5 rounded-xl border bg-background hover:border-accent hover:bg-accent/5 transition text-left"
+                  className="group p-6 rounded-[1.5rem] border-2 border-accent/5 bg-muted/10 hover:bg-accent/5 hover:border-accent hover:translate-y-[-2px] transition-all text-left"
                 >
-                  <GraduationCap className="w-5 h-5 text-accent mb-2" />
-                  <div className="text-base font-semibold">{opt.label}</div>
-                  <div className="text-xs text-muted-foreground mt-1 group-hover:text-accent">
-                    Use this template <ArrowRight className="inline w-3 h-3" />
+                  <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent mb-4 transition-transform group-hover:scale-110">
+                    <GraduationCap className="w-5 h-5" />
+                  </div>
+                  <div className="text-base font-bold mb-1">{opt.label}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground group-hover:text-accent transition-colors">
+                    Start Process <ArrowRight className="inline w-3 h-3 ml-1" />
                   </div>
                 </button>
               ))}
             </div>
-          </div>
+          </>
         )}
 
         {step === "review-live" && degreeType && (
           <div>
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-sm text-muted-foreground mb-6 font-medium">
               {loadingRequested
-                ? "Loading live requests..."
-                : `${requestedRows.length} student${requestedRows.length === 1 ? "" : "s"} requested a ${degreeType} degree.`}{" "}
-              Pick the folder of signed PDFs (named <code className="px-1 py-0.5 rounded bg-muted text-xs">{"{PRN}.pdf"}</code>)
-              and click Match.
+                ? "Synchronizing student requests..."
+                : `${requestedRows.length} active request(s) waiting for ${degreeType} verification.`}{" "}
             </p>
 
-            <div className="rounded-lg border bg-background overflow-hidden mb-4">
+            <div className="rounded-2xl border-2 border-accent/5 bg-background overflow-hidden mb-6">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b bg-muted/30">
-                    <th className="text-left py-2 px-3 font-medium text-muted-foreground">Student</th>
-                    <th className="text-left py-2 px-3 font-medium text-muted-foreground">PRN</th>
-                    <th className="text-left py-2 px-3 font-medium text-muted-foreground">Email</th>
-                    <th className="text-left py-2 px-3 font-medium text-muted-foreground">Requested</th>
+                  <tr className="border-b bg-muted/10">
+                    <th className="text-left py-3 px-6 font-bold uppercase tracking-widest text-[10px] text-muted-foreground">Student</th>
+                    <th className="text-left py-3 px-6 font-bold uppercase tracking-widest text-[10px] text-muted-foreground">PRN</th>
+                    <th className="text-left py-3 px-6 font-bold uppercase tracking-widest text-[10px] text-muted-foreground">Email</th>
+                    <th className="text-left py-3 px-6 font-bold uppercase tracking-widest text-[10px] text-muted-foreground">Requested</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loadingRequested ? (
-                    <tr><td colSpan={4} className="py-6 text-center text-muted-foreground">Loading…</td></tr>
+                    <tr><td colSpan={4} className="py-12 text-center text-muted-foreground font-medium animate-pulse">Fetching global registry…</td></tr>
                   ) : requestedRows.length === 0 ? (
-                    <tr><td colSpan={4} className="py-6 text-center text-muted-foreground">No outstanding requests for this degree type.</td></tr>
+                    <tr><td colSpan={4} className="py-12 text-center text-muted-foreground font-medium italic opacity-50">No outstanding requests for this category.</td></tr>
                   ) : (
                     requestedRows.map((r) => (
-                      <tr key={r.credential_id} className="border-b last:border-0">
-                        <td className="py-2 px-3">{r.student_name ?? "—"}</td>
-                        <td className="py-2 px-3 font-mono text-xs">{r.prn_number ?? "—"}</td>
-                        <td className="py-2 px-3 text-muted-foreground">{r.student_email ?? "—"}</td>
-                        <td className="py-2 px-3 text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</td>
+                      <tr key={r.credential_id} className="border-b last:border-0 hover:bg-accent/[0.02] transition-colors">
+                        <td className="py-3 px-6 font-bold">{r.student_name ?? "—"}</td>
+                        <td className="py-3 px-6">
+                          <code className="text-[11px] font-mono bg-muted/50 px-2 py-1 rounded-md text-accent">{r.prn_number ?? "—"}</code>
+                        </td>
+                        <td className="py-3 px-6 text-muted-foreground">{r.student_email ?? "—"}</td>
+                        <td className="py-3 px-6 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{new Date(r.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</td>
                       </tr>
                     ))
                   )}
@@ -272,30 +285,35 @@ const BulkUploadWizard: React.FC<Props> = ({ onCommitted }) => {
               </table>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-              <label className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border bg-background hover:bg-muted cursor-pointer text-sm font-medium">
-                <Upload className="w-4 h-4" />
-                Pick PDF folder / files
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  multiple
-                  className="hidden"
-                  onChange={handleFilesPicked}
-                />
-              </label>
-              <span className="text-xs text-muted-foreground">
-                {pdfFiles.length === 0 ? "No PDFs picked yet." : `${pdfFiles.length} PDF(s) ready.`}
-              </span>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 bg-accent/[0.03] p-6 rounded-2xl border border-accent/10">
+              <div className="flex items-center gap-4">
+                <label className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-xl bg-accent text-accent-foreground text-xs font-bold hover:opacity-90 cursor-pointer transition-all shadow-lg shadow-accent/20 active:scale-[0.98]">
+                  <Upload className="w-3.5 h-3.5" />
+                  Select PDF Records
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    multiple
+                    className="hidden"
+                    onChange={handleFilesPicked}
+                  />
+                </label>
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Ready for Upload</span>
+                  <span className="text-sm font-semibold">
+                    {pdfFiles.length === 0 ? "No records selected" : `${pdfFiles.length} file(s) staged`}
+                  </span>
+                </div>
+              </div>
               <div className="sm:ml-auto" />
               <button
                 type="button"
                 onClick={() => void handleMatch()}
                 disabled={pdfFiles.length === 0 || matching || requestedRows.length === 0}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-2.5 px-6 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:opacity-95 transition-all shadow-lg disabled:opacity-30 disabled:cursor-not-allowed"
               >
-                {matching ? "Matching…" : "Match by PRN"}
-                <ArrowRight className="w-4 h-4" />
+                {matching ? "Matching Engine Active..." : "Run Matching Algorithm"}
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
@@ -303,52 +321,55 @@ const BulkUploadWizard: React.FC<Props> = ({ onCommitted }) => {
 
         {step === "review-match" && matchResult && (
           <div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
-              <div className="rounded-lg border p-3 bg-emerald-500/5">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">Matched</div>
-                <div className="text-2xl font-bold tabular-nums">{matchResult.matched_rows.length}</div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+              <div className="rounded-[1.5rem] border-2 border-success/10 p-5 bg-success/[0.02]">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-success/60 mb-2">Algorithm Matches</div>
+                <div className="text-3xl font-bold tabular-nums text-success">{matchResult.matched_rows.length}</div>
               </div>
-              <div className="rounded-lg border p-3 bg-amber-500/5">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">Requests w/o PDF</div>
-                <div className="text-2xl font-bold tabular-nums">{matchResult.unmatched_request_prns.length}</div>
+              <div className="rounded-[1.5rem] border-2 border-warning/10 p-5 bg-warning/[0.02]">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-warning/60 mb-2">Unmatched Records</div>
+                <div className="text-3xl font-bold tabular-nums text-warning">{matchResult.unmatched_request_prns.length}</div>
               </div>
-              <div className="rounded-lg border p-3 bg-rose-500/5">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">Orphan PDFs</div>
-                <div className="text-2xl font-bold tabular-nums">{matchResult.orphan_pdf_filenames.length}</div>
+              <div className="rounded-[1.5rem] border-2 border-destructive/10 p-5 bg-destructive/[0.02]">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-destructive/60 mb-2">Isolated Files</div>
+                <div className="text-3xl font-bold tabular-nums text-destructive">{matchResult.orphan_pdf_filenames.length}</div>
               </div>
             </div>
 
-            <div className="rounded-lg border bg-background overflow-hidden mb-4">
-              <div className="px-3 py-2 border-b bg-muted/30 text-xs font-medium text-muted-foreground">
-                Matched rows — untick any that look wrong; unticked rows stay REQUESTED for next batch.
+            <div className="rounded-2xl border-2 border-accent/5 bg-background overflow-hidden mb-6">
+              <div className="px-6 py-3 border-b bg-muted/20 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                Auto-Matched Entities
               </div>
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b bg-muted/30">
-                    <th className="w-10 py-2 px-3"></th>
-                    <th className="text-left py-2 px-3 font-medium text-muted-foreground">PRN</th>
-                    <th className="text-left py-2 px-3 font-medium text-muted-foreground">Student</th>
-                    <th className="text-left py-2 px-3 font-medium text-muted-foreground">PDF</th>
+                  <tr className="border-b bg-muted/10">
+                    <th className="w-12 py-3 px-6"></th>
+                    <th className="text-left py-3 px-6 font-bold uppercase tracking-widest text-[10px] text-muted-foreground">PRN</th>
+                    <th className="text-left py-3 px-6 font-bold uppercase tracking-widest text-[10px] text-muted-foreground">Entity Name</th>
+                    <th className="text-left py-3 px-6 font-bold uppercase tracking-widest text-[10px] text-muted-foreground">Validated File</th>
                   </tr>
                 </thead>
                 <tbody>
                   {matchResult.matched_rows.length === 0 ? (
-                    <tr><td colSpan={4} className="py-6 text-center text-muted-foreground">No matches.</td></tr>
+                    <tr><td colSpan={4} className="py-12 text-center text-muted-foreground font-medium opacity-40 italic">Zero automatic matches found.</td></tr>
                   ) : (
                     matchResult.matched_rows.map((r) => {
                       const isUnticked = deselected.has(r.credential_id);
                       return (
-                        <tr key={r.credential_id} className={`border-b last:border-0 ${isUnticked ? "opacity-50" : ""}`}>
-                          <td className="py-2 px-3 text-center">
+                        <tr key={r.credential_id} className={`group border-b last:border-0 transition-all ${isUnticked ? "opacity-30 grayscale" : "hover:bg-accent/[0.02]"}`}>
+                          <td className="py-3 px-6 text-center">
                             <input
                               type="checkbox"
                               checked={!isUnticked}
                               onChange={() => toggleSelected(r.credential_id)}
+                              className="w-4 h-4 rounded-md border-border text-accent focus:ring-accent accent-accent transition-transform active:scale-90"
                             />
                           </td>
-                          <td className="py-2 px-3 font-mono text-xs">{r.prn_number}</td>
-                          <td className="py-2 px-3">{r.student_name ?? "—"}</td>
-                          <td className="py-2 px-3 text-muted-foreground inline-flex items-center gap-1.5"><FileText className="w-3 h-3" />{r.pdf_filename}</td>
+                          <td className="py-3 px-6">
+                            <code className="text-[11px] font-mono bg-muted/50 px-2 py-1 rounded-md text-accent">{r.prn_number}</code>
+                          </td>
+                          <td className="py-3 px-6 font-bold">{r.student_name ?? "—"}</td>
+                          <td className="py-3 px-6 text-muted-foreground font-medium inline-flex items-center gap-2"><FileText className="w-3.5 h-3.5 text-accent" />{r.pdf_filename}</td>
                         </tr>
                       );
                     })
@@ -382,14 +403,14 @@ const BulkUploadWizard: React.FC<Props> = ({ onCommitted }) => {
               </div>
             )}
 
-            <div className="flex justify-end">
+            <div className="flex justify-end pt-4">
               <button
                 type="button"
                 onClick={() => void handleCommit()}
                 disabled={committing || matchedSelectedCount === 0}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 disabled:opacity-50"
+                className="inline-flex items-center gap-2.5 px-8 py-3 rounded-xl bg-accent text-accent-foreground text-xs font-bold hover:opacity-90 transition-all shadow-xl shadow-accent/20 active:scale-[0.98] disabled:opacity-30"
               >
-                {committing ? "Committing…" : `Commit ${matchedSelectedCount} row(s) → Pending`}
+                {committing ? "Processing Transactions..." : `Finalize ${matchedSelectedCount} Official Records`}
                 <CheckCircle2 className="w-4 h-4" />
               </button>
             </div>
@@ -435,9 +456,9 @@ const BulkUploadWizard: React.FC<Props> = ({ onCommitted }) => {
             </div>
 
             <p className="text-sm text-muted-foreground mb-3">
-              Committed rows are now in your <strong>pending</strong> queue. Switch to the
-              Degree Submissions tab and use the existing Mint SBT button to push each one
-              on-chain.
+              Matched documents have been moved to your <b>pending</b> queue. 
+              You can now proceed to the <b>Degree Submissions</b> tab to perform the final on-chain minting 
+              for each student individually.
             </p>
 
             <div className="flex justify-end">

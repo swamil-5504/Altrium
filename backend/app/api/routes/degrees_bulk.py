@@ -3,7 +3,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 
-from app.api.deps.auth import require_admin_with_wallet
+from app.api.deps.auth import require_verified_admin
 from app.core.config import settings
 from app.core.limiter import limiter
 from app.crud.crud import UserCRUD
@@ -20,14 +20,7 @@ from app.services.bulk_degree_service import BulkDegreeService
 router = APIRouter(prefix=f"{settings.API_V1_STR}/degrees/bulk", tags=["degrees-bulk"])
 
 
-def _row_to_response(row) -> dict:
-    return {
-        "credential_id": row.id,
-        "prn_number": row.prn_number,
-        "description": row.description,
-        "metadata_json": row.metadata_json,
-        "created_at": row.created_at,
-    }
+
 
 
 @router.get("/requests", response_model=List[RequestedRowResponse])
@@ -35,7 +28,7 @@ def _row_to_response(row) -> dict:
 async def list_requested(
     request: Request,
     degree_type: DegreeType,
-    current_user: User = Depends(require_admin_with_wallet),
+    current_user: User = Depends(require_verified_admin),
 ):
     """Live list of REQUESTED credentials for the admin's college + degree type."""
     creds = await BulkDegreeService.list_requested(current_user, degree_type)
@@ -60,7 +53,7 @@ async def match_pdfs(
     request: Request,
     degree_type: DegreeType = Form(...),
     files: List[UploadFile] = File(...),
-    current_user: User = Depends(require_admin_with_wallet),
+    current_user: User = Depends(require_verified_admin),
 ):
     """Stage PDFs and match them by PRN to REQUESTED credentials. Returns a batch_id for review/commit."""
     batch = await BulkDegreeService.match_pdfs(current_user, degree_type, files)
@@ -96,7 +89,7 @@ async def match_pdfs(
 @router.get("/{batch_id}", response_model=BulkMatchResponse)
 async def get_batch(
     batch_id: UUID,
-    current_user: User = Depends(require_admin_with_wallet),
+    current_user: User = Depends(require_verified_admin),
 ):
     """Review state of a bulk batch (matched / orphan / unmatched)."""
     batch = await BulkDegreeService.get_batch(batch_id, current_user)
@@ -134,7 +127,7 @@ async def commit_batch(
     request: Request,
     batch_id: UUID,
     payload: BulkCommitRequest,
-    current_user: User = Depends(require_admin_with_wallet),
+    current_user: User = Depends(require_verified_admin),
 ):
     """Commit matched rows: transition REQUESTED → PENDING with PDF attached."""
     result = await BulkDegreeService.commit_batch(

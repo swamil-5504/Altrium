@@ -44,6 +44,7 @@ class User(Document):
     # to approve + mint credentials.
     is_legal_admin_verified: bool = False
     college_name: Optional[str] = None
+    college_logo: Optional[str] = None
     wallet_address: Optional[str] = None
     verification_document_path: Optional[str] = None
     telegram_id: Optional[str] = None
@@ -68,6 +69,7 @@ class Credential(Document):
     tx_hash: Optional[str] = None
     prn_number: Optional[str] = None
     college_name: Optional[str] = None
+    college_logo: Optional[str] = None
     degree_type: Optional[DegreeType] = None
     revoked: bool = False
     revoked_at: Optional[datetime] = None

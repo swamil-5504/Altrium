@@ -63,5 +63,5 @@ async def get_telegram_link(current_user: User = Depends(get_current_user)):
     from app.core.config import settings
     bot_name = os.getenv("TELEGRAM_BOT_USERNAME", "Altrium_Notification_Bot")
     
-    link = f"https://t.me/{bot_name}?start={token}"
+    link = f"tg://resolve?domain={bot_name}&start={token}"
     return {"link": link, "token": token}

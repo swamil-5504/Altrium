@@ -8,6 +8,7 @@ export interface IUser {
   full_name: string | null;
   role: "ADMIN" | "STUDENT" | "SUPERADMIN" | "EMPLOYER";
   college_name: string | null;
+  college_logo: string | null;
   wallet_address: string | null;
   prn_number: string | null;
   telegram_id: string | null;

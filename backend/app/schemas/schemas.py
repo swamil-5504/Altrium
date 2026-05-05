@@ -65,6 +65,7 @@ class UserBase(BaseModel):
     wallet_address: Optional[str] = Field(None, pattern=WALLET_ADDRESS_PATTERN)
     prn_number: Optional[str] = None
     telegram_id: Optional[str] = None
+    college_logo: Optional[str] = None
 
     @field_validator("full_name", "college_name", mode="before")
     @classmethod
@@ -79,6 +80,8 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     full_name: Optional[str] = Field(None, max_length=100)
     role: Optional[UserRole] = None
+    college_name: Optional[str] = Field(None, max_length=150)
+    college_logo: Optional[str] = None
 
     @field_validator("full_name", mode="before")
     @classmethod
@@ -88,20 +91,7 @@ class UserUpdate(BaseModel):
 
 
 
-class UserCreate(UserBase):
-    password: str = Field(...)
 
-
-
-
-class UserUpdate(BaseModel):
-    full_name: Optional[str] = Field(None, max_length=100)
-    role: Optional[UserRole] = None
-
-    @field_validator("full_name", mode="before")
-    @classmethod
-    def _scrub_text(cls, v):
-        return _strip_control(v) if isinstance(v, str) else v
 
 
 class UserResponse(BaseModel):
@@ -110,10 +100,12 @@ class UserResponse(BaseModel):
     full_name: Optional[str] = None
     role: UserRole = UserRole.STUDENT
     college_name: Optional[str] = None
+    college_logo: Optional[str] = None
     wallet_address: Optional[str] = None
     telegram_id: Optional[str] = None
     telegram_link_token: Optional[str] = None
     prn_number: Optional[str] = None
+    college_logo: Optional[str] = None
     is_active: bool
     is_legal_admin_verified: bool = False
     created_at: datetime
@@ -124,7 +116,7 @@ class UserResponse(BaseModel):
             return None
         import os
         bot_name = os.getenv("TELEGRAM_BOT_USERNAME", "Altrium_Notification_Bot")
-        return f"https://t.me/{bot_name}?start={self.telegram_link_token}"
+        return f"tg://resolve?domain={bot_name}&start={self.telegram_link_token}"
 
     class Config:
         from_attributes = True
@@ -196,6 +188,7 @@ class CredentialResponse(CredentialBase):
     tx_hash: Optional[str] = Field(None, pattern=TX_HASH_PATTERN)
     prn_number: Optional[str] = None
     college_name: Optional[str] = None
+    college_logo: Optional[str] = None
     degree_type: Optional[DegreeType] = None
     document_uid: Optional[str] = None
     has_document: bool = False

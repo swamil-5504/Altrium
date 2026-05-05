@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, Sun, Moon } from "lucide-react";
+import { Menu, X, Sun, Moon, Settings } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/components/ThemeProvider";
@@ -103,6 +103,16 @@ export const Navbar = () => {
             <Moon className="h-4 w-4 block dark:hidden" />
           </button>
 
+          {isAuthenticated && (
+            <Link
+              to="/settings"
+              className={`p-1.5 rounded-lg transition-colors ${location.pathname === "/settings" ? "text-foreground bg-accent/10" : "text-muted-foreground hover:text-foreground"}`}
+              title="Settings"
+            >
+              <Settings className="h-4 w-4" />
+            </Link>
+          )}
+
           {isAuthenticated ? (
             <button
               type="button"
@@ -140,6 +150,14 @@ export const Navbar = () => {
             <Sun className="h-4 w-4 hidden dark:block" />
             <Moon className="h-4 w-4 block dark:hidden" />
           </button>
+          {isAuthenticated && (
+            <Link
+              to="/settings"
+              className={`p-1.5 rounded-lg transition-colors ${location.pathname === "/settings" ? "text-foreground bg-accent/10" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <Settings className="h-4 w-4" />
+            </Link>
+          )}
           <button
             className="text-muted-foreground hover:text-foreground transition-colors"
             onClick={() => setMobileOpen(!mobileOpen)}
@@ -155,26 +173,17 @@ export const Navbar = () => {
       {mobileOpen && (
         <div className="md:hidden border-t border-border/50 bg-background px-4 py-3 space-y-1">
           {navLinks.map((link) => (
-            link.enabled ? (
-              <Link
-                key={link.key}
-                to={link.to}
-                onClick={() => setMobileOpen(false)}
-                className={`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${location.pathname === link.to
-                  ? "text-foreground font-semibold"
-                  : "text-muted-foreground hover:text-foreground"
-                  }`}
-              >
-                {link.label}
-              </Link>
-            ) : (
-              <span
-                key={link.key}
-                className="block px-3 py-2 text-sm font-medium text-muted-foreground/40 cursor-not-allowed"
-              >
-                {link.label}
-              </span>
-            )
+            <Link
+              key={link.key}
+              to={link.to}
+              onClick={() => setMobileOpen(false)}
+              className={`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${location.pathname === link.to
+                ? "text-foreground font-semibold"
+                : "text-muted-foreground hover:text-foreground"
+                }`}
+            >
+              {link.label}
+            </Link>
           ))}
 
           <div className="pt-2 mt-2 border-t border-border/50 flex flex-col gap-2">

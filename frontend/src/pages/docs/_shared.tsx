@@ -168,7 +168,7 @@ export const CodeBlock = ({ code, lang }: { code: string; lang?: string }) => {
           )}
         </button>
       </div>
-      <pre className="overflow-x-auto p-4 text-[12.5px] leading-relaxed">
+      <pre className="overflow-x-auto p-6 text-[14px] leading-relaxed">
         <code className={`font-mono ${palette.text} whitespace-pre`}>{code}</code>
       </pre>
     </div>
@@ -234,22 +234,22 @@ export const DocPage = ({
   summary?: string;
   children: React.ReactNode;
 }) => (
-  <article className="min-w-0 py-8 pb-32 max-w-[760px] mx-auto">
+  <article className="min-w-0 py-12 pb-32 max-w-[840px] mx-auto">
     {kicker && (
-      <div className={`text-[11px] uppercase tracking-[0.14em] ${palette.accent} mb-2 font-medium`}>
+      <div className={`text-[12px] uppercase tracking-[0.2em] ${palette.accent} mb-4 font-bold`}>
         {kicker}
       </div>
     )}
-    <h1 className={`text-[34px] font-semibold tracking-tight ${palette.text} leading-[1.1]`}>
+    <h1 className={`text-[42px] font-bold tracking-tight ${palette.text} leading-[1.1]`}>
       {title}
     </h1>
     {summary && (
-      <p className={`mt-4 text-[15.5px] ${palette.textMuted} leading-[1.7] max-w-2xl`}>
+      <p className={`mt-6 text-[18px] ${palette.textMuted} leading-[1.8] max-w-3xl`}>
         {summary}
       </p>
     )}
     <div
-      className={`mt-8 space-y-5 text-[14.5px] leading-[1.75] ${palette.textMuted}`}
+      className={`mt-12 space-y-8 text-[16px] leading-[1.8] ${palette.textMuted}`}
     >
       {children}
     </div>
@@ -267,35 +267,35 @@ export const Sub = ({
 }) => {
   const docs = useDocsContent();
   return (
-    <section id={id} className="scroll-mt-24 pt-8 group/sub">
+    <section id={id} className="scroll-mt-24 pt-12 group/sub border-t border-transparent hover:border-border/10 transition-colors">
       <h2
-        className={`flex items-center gap-2 text-[20px] font-semibold ${palette.text} mb-3 tracking-tight`}
+        className={`flex items-center gap-2 text-[26px] font-bold ${palette.text} mb-5 tracking-tight`}
       >
         <a
           href={`#${id}`}
           aria-label={docs.shared.linkToSection(title)}
           className={`opacity-0 group-hover/sub:opacity-100 transition-opacity ${palette.textFaint} hover:${palette.accent}`}
         >
-          <Hash className="h-4 w-4" />
+          <Hash className="h-5 w-5" />
         </a>
         {title}
       </h2>
-      <div className="space-y-3">{children}</div>
+      <div className="space-y-4">{children}</div>
     </section>
   );
 };
 
 export const H3 = ({ children }: { children: React.ReactNode }) => (
-  <h3 className={`text-[15px] font-semibold ${palette.text} mt-6 mb-2 tracking-tight`}>
+  <h3 className={`text-[18px] font-bold ${palette.text} mt-10 mb-4 tracking-tight`}>
     {children}
   </h3>
 );
 
 /* Small styled card grid item */
 export const InfoCard = ({ title, body }: { title: string; body: string }) => (
-  <div className={`rounded-xl p-4 border ${palette.border} ${palette.panel}`}>
-    <div className={`text-[13px] font-semibold ${palette.text}`}>{title}</div>
-    <div className={`text-[13px] ${palette.textMuted} mt-1 leading-relaxed`}>{body}</div>
+  <div className={`rounded-2xl p-6 border ${palette.border} ${palette.panel} shadow-sm`}>
+    <div className={`text-[15px] font-bold ${palette.text}`}>{title}</div>
+    <div className={`text-[15px] ${palette.textMuted} mt-2 leading-relaxed`}>{body}</div>
   </div>
 );
 
@@ -315,10 +315,10 @@ export const Callout = ({
   const label = kind === "warn" ? docs.shared.warning : docs.shared.note;
   return (
     <div
-      className={`rounded-xl p-4 border ${tone} text-[13.5px] leading-relaxed`}
+      className={`rounded-2xl p-6 border ${tone} text-[15px] leading-relaxed shadow-sm`}
     >
       <div
-        className={`text-[11px] uppercase tracking-wider mb-1 font-semibold ${kind === "warn" ? "text-amber-700 dark:text-amber-400" : palette.accent
+        className={`text-[12px] uppercase tracking-widest mb-2 font-bold ${kind === "warn" ? "text-amber-700 dark:text-amber-400" : palette.accent
           }`}
       >
         {label}
