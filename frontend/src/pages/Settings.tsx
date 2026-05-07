@@ -293,31 +293,33 @@ export default function Settings() {
                   </div>
 
                   <div className="space-y-4">
-                    <div className="p-6 rounded-[2rem] border bg-muted/10 space-y-4">
-                       <div className="flex items-center justify-between">
-                         <div className="flex items-center gap-3">
-                           <div className="w-10 h-10 rounded-xl bg-[#229ED9]/10 text-[#229ED9] flex items-center justify-center">
-                             <Send className="w-5 h-5" />
-                           </div>
-                           <div>
-                             <p className="text-sm font-bold">Telegram Identity</p>
-                             <p className="text-[10px] text-muted-foreground">Secure alerts and instant notifications.</p>
-                           </div>
-                         </div>
-                         {user.telegram_id ? (
-                           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-success/10 text-success border border-success/20 text-[10px] font-bold">
-                             <Check className="w-3 h-3" /> Connected
-                           </div>
-                         ) : (
-                           <button 
-                             onClick={() => window.open(`tg://resolve?domain=${import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'Altrium_Notification_Bot'}&start=${user.telegram_link_token}`)}
-                             className="px-4 py-2 rounded-xl bg-[#229ED9] text-white text-[10px] font-bold hover:opacity-90 transition-all"
-                           >
-                             Connect Bot
-                           </button>
-                         )}
-                       </div>
-                    </div>
+                    {user.role === "STUDENT" && (
+                      <div className="p-6 rounded-[2rem] border bg-muted/10 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-[#229ED9]/10 text-[#229ED9] flex items-center justify-center">
+                              <Send className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold">Telegram Identity</p>
+                              <p className="text-[10px] text-muted-foreground">Secure alerts and instant notifications.</p>
+                            </div>
+                          </div>
+                          {user.telegram_id ? (
+                            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-success/10 text-success border border-success/20 text-[10px] font-bold">
+                              <Check className="w-3 h-3" /> Connected
+                            </div>
+                          ) : (
+                            <button 
+                              onClick={() => window.open(`tg://resolve?domain=${import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'Altrium_Notification_Bot'}&start=${user.telegram_link_token}`)}
+                              className="px-4 py-2 rounded-xl bg-[#229ED9] text-white text-[10px] font-bold hover:opacity-90 transition-all"
+                            >
+                              Connect Bot
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     <div className="p-6 rounded-[2rem] border bg-muted/10 space-y-4">
                        <div className="flex items-center gap-3 mb-4">

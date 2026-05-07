@@ -11,6 +11,7 @@ from .templates import (
     admin_verified_msg,
     degree_approved_msg,
     degree_rejected_msg,
+    degree_acknowledged_msg,
     pending_reminder_msg
 )
 from app.models.models import User

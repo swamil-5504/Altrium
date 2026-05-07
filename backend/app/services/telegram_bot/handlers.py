@@ -177,6 +177,15 @@ async def _handle_token_linking(chat_id: str, token: str):
         )
         return
         
+    # Role Restriction: Only students can link Telegram
+    if user.role != UserRole.STUDENT:
+        await _send_msg(
+            chat_id,
+            "⚠️ <b>Access Restricted</b>\n\n"
+            "Telegram notifications are currently available for <b>Students</b> only."
+        )
+        return
+
     # 1-to-1 Enforcement: Clear this telegram_id from any other accounts first
     str_chat_id = str(chat_id)
     await User.find(User.telegram_id == str_chat_id).update({"$set": {"telegram_id": None}})

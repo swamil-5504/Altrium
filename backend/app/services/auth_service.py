@@ -30,13 +30,14 @@ class AuthService:
                 detail="Email already registered",
             )
         user = await UserCRUD.create(request)
-        # Fire-and-forget registration notification
-        asyncio.create_task(
-            tg_service.notify_registration(
-                user.full_name or user.email, 
-                user.telegram_id
+        # Fire-and-forget registration notification (Students only)
+        if user.role == "STUDENT":
+            asyncio.create_task(
+                tg_service.notify_registration(
+                    user.full_name or user.email, 
+                    user.telegram_id
+                )
             )
-        )
 
         return user
 

@@ -264,29 +264,43 @@ export default function Register() {
               <p className="text-muted-foreground">Welcome to Altrium, {successData.full_name || "Student"}.</p>
             </div>
 
-            <div className="bg-muted/50 rounded-2xl p-6 space-y-4 border">
-              <h3 className="font-semibold text-sm uppercase tracking-wider text-accent">Next Step: Stay Updated</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Connect your Telegram to receive instant alerts when your degree is verified or minted on-chain.
-              </p>
-              
-              <a 
-                href={successData.telegram_bot_link || `tg://resolve?domain=Altrium_Notification_Bot&start=${successData.telegram_link_token}`}
-                target="_blank"
-                rel="noreferrer"
-                className="block w-full py-2.5 px-5 rounded-xl bg-[#229ED9] text-white text-xs font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#229ED9]/10 active:scale-95"
-              >
-                <Send className="w-4 h-4" />
-                Connect Telegram
-              </a>
-              
-              <button 
-                onClick={() => navigate(successData.role === "ADMIN" ? "/pending-verification" : "/student")}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4"
-              >
-                I'll do this later, take me to dashboard
-              </button>
-            </div>
+            {successData.role === "STUDENT" ? (
+              <div className="bg-muted/50 rounded-2xl p-6 space-y-4 border">
+                <h3 className="font-semibold text-sm uppercase tracking-wider text-accent">Next Step: Stay Updated</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Connect your Telegram to receive instant alerts when your degree is verified or minted on-chain.
+                </p>
+                
+                <a 
+                  href={successData.telegram_bot_link || `tg://resolve?domain=Altrium_Notification_Bot&start=${successData.telegram_link_token}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block w-full py-2.5 px-5 rounded-xl bg-[#229ED9] text-white text-xs font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#229ED9]/10 active:scale-95"
+                >
+                  <Send className="w-4 h-4" />
+                  Connect Telegram
+                </a>
+                
+                <button 
+                  onClick={() => navigate("/student")}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4"
+                >
+                  I'll do this later, take me to dashboard
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Your administrator account has been created. Please continue to your dashboard to complete the verification process.
+                </p>
+                <button 
+                  onClick={() => navigate("/pending-verification")}
+                  className="w-full py-3 px-6 rounded-xl bg-accent text-accent-foreground text-sm font-bold hover:opacity-90 transition-all shadow-lg shadow-accent/10 active:scale-[0.98]"
+                >
+                  Continue to Dashboard
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

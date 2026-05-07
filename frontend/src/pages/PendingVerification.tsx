@@ -8,7 +8,7 @@ import { toast } from "sonner";
 
 export default function PendingVerification() {
     const navigate = useNavigate();
-    const { isPendingVerification, isAuthenticated, refreshUser } = useAuth();
+    const { isPendingVerification, isAuthenticated, refreshUser, user, logout } = useAuth();
     const { close: closeAppKit } = useAppKit();
 
     // Close any Reown AppKit wallet modal immediately — this page is for unapproved
@@ -35,6 +35,12 @@ export default function PendingVerification() {
             navigate("/university");
         }
     }, [isAuthenticated, isPendingVerification, navigate]);
+
+    const handleLogout = async () => {
+        await logout();
+        navigate("/");
+    };
+
     return (
         <div className="min-h-screen bg-background">
             {/* Minimal top bar - no Navbar since admin is not logged in */}
@@ -49,12 +55,21 @@ export default function PendingVerification() {
                         </div>
                         <span className="font-semibold text-lg tracking-tight">Altrium</span>
                     </Link>
-                    <Link
-                        to="/login?role=ADMIN"
-                        className="px-3.5 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-accent hover:bg-accent/10 transition-colors"
-                    >
-                        Login
-                    </Link>
+                    {user ? (
+                        <button
+                            onClick={handleLogout}
+                            className="px-3.5 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        >
+                            Logout
+                        </button>
+                    ) : (
+                        <Link
+                            to="/login?role=ADMIN"
+                            className="px-3.5 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-accent hover:bg-accent/10 transition-colors"
+                        >
+                            Login
+                        </Link>
+                    )}
                 </div>
             </div>
 
@@ -74,14 +89,14 @@ export default function PendingVerification() {
                             <h2 className="text-2xl font-bold mb-3">Verification Pending</h2>
                             <p className="text-muted-foreground mb-6 leading-relaxed max-w-2xl mx-auto">
                                 Your institution details and proof of affiliation have been submitted securely.
-                                Platform administrators are currently reviewing your application. Please log in again after some time to check your approval status.
+                                Platform administrators are currently reviewing your application. You will be <b>automatically redirected</b> to the dashboard once your account is approved.
                             </p>
 
                             <Link
-                                to="/login?role=ADMIN"
+                                to="/"
                                 className="inline-flex justify-center items-center gap-2 py-2 px-6 rounded-lg border border-border bg-background text-foreground font-medium hover:bg-muted transition active:scale-[0.98]"
                             >
-                                <ArrowLeft className="w-4 h-4" /> Return to Login
+                                <ArrowLeft className="w-4 h-4" /> Return to Home
                             </Link>
                         </div>
                     </ScrollReveal>
