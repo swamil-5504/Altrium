@@ -13,7 +13,9 @@ from app.schemas.schemas import (
     TokenResponse,
     UserResponse,
 )
-from app.core.security import get_token_exp
+from app.core.security import ACCESS_TOKEN_TYPE, decode_token, get_token_exp
+from app.crud.crud import UserCRUD
+from uuid import UUID
 from app.core.config import settings
 from app.services.auth_service import AuthService
 from app.core.limiter import limiter
@@ -139,12 +141,33 @@ async def logout(request: Request, body: LogoutRequest | None = None):
     Blacklist the caller's access token (from the Authorization header) and
     their refresh token (from the request body) until each one's real `exp`.
     """
+    access_token: Optional[str] = None
     auth_header = request.headers.get("Authorization")
     if auth_header and auth_header.startswith("Bearer "):
-        await _blacklist(auth_header.split(" ", 1)[1])
+        access_token = auth_header.split(" ", 1)[1]
+        await _blacklist(access_token)
 
     if body and body.refresh_token:
         await _blacklist(body.refresh_token)
+
+    # End the user's Telegram session: clear telegram_id so the bot stops
+    # treating this chat as the now-logged-out user, and rotate the link
+    # token so any cached deep link is invalidated.
+    if access_token:
+        try:
+            payload = decode_token(access_token, expected_type=ACCESS_TOKEN_TYPE)
+            user_id = payload.get("sub") if payload else None
+            if user_id:
+                user = await UserCRUD.get_by_id(UUID(user_id))
+                if user is not None:
+                    import secrets as _secrets
+                    user.telegram_id = None
+                    user.telegram_link_token = _secrets.token_urlsafe(16)
+                    user.updated_at = datetime.utcnow()
+                    await user.save()
+        except Exception:
+            # Best-effort cleanup — never block logout on this.
+            pass
 
     return {"detail": "Logged out and tokens revoked"}
 

@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { extractErrorMessage } from "@/utils/errors";
 import { Navbar } from "@/components/Navbar";
 import { ScrollReveal } from "@/components/ScrollReveal";
-import { Upload, CreditCard, Clock, Shield, XCircle, ArrowRight, Eye, User as UserIcon, Mail, Building2, FileText, MessageSquare, RefreshCcw } from "lucide-react";
+import { Upload, CreditCard, Clock, Shield, XCircle, ArrowRight, Eye, User as UserIcon, Mail, Building2, FileText, MessageSquare, RefreshCcw, Send, Loader2, CheckCircle2, X } from "lucide-react";
 
 type DegreeType = "BTECH" | "BSC" | "MTECH" | "MBA";
 
@@ -44,6 +44,10 @@ const StudentDashboard: React.FC = () => {
   const pendingCount = submissions.filter((sub) => sub.status === "PENDING").length;
 
   const [showForm, setShowForm] = useState(false);
+  const [linkModalOpen, setLinkModalOpen] = useState(false);
+  const [linkData, setLinkData] = useState<{ link: string; token: string } | null>(null);
+  const [linkLoading, setLinkLoading] = useState(false);
+  const [linkConnected, setLinkConnected] = useState(false);
   const [formData, setFormData] = useState({
     prn_number: user?.prn_number || "",
     studentName: user?.full_name || "",
@@ -70,6 +74,10 @@ const StudentDashboard: React.FC = () => {
 
   useEffect(() => {
     void fetchSubmissions();
+    const interval = setInterval(() => {
+      void fetchSubmissions(true);
+    }, 10000); // Poll every 10 seconds for asynchronous state updates
+    return () => clearInterval(interval);
   }, []);
 
   // Poll for telegram link status while not connected so the badge updates
@@ -82,16 +90,16 @@ const StudentDashboard: React.FC = () => {
     return () => clearInterval(interval);
   }, [user?.telegram_id, refreshUser]);
 
-  const fetchSubmissions = async () => {
-    setLoading(true);
+  const fetchSubmissions = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const response = await axios.get("/degrees");
       setSubmissions(response.data);
     } catch (err) {
       console.error(err);
-      toast.error(t("studentDashboard.toasts.loadFailed"));
+      if (!silent) toast.error(t("studentDashboard.toasts.loadFailed"));
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -113,17 +121,41 @@ const StudentDashboard: React.FC = () => {
     }
   };
 
-  const handleRelink = async () => {
+  const handleOpenLinkModal = async () => {
+    setLinkLoading(true);
+    setLinkConnected(false);
+    setLinkModalOpen(true);
     try {
       const response = await axios.get("/telegram/link-token");
-      toast.success("New link generated! Please connect again.");
+      setLinkData({ link: response.data.link, token: response.data.token });
       await refreshUser();
-      // Optionally open the link automatically
-      window.open(response.data.link, "_blank");
     } catch (err) {
-      toast.error("Failed to generate new link");
+      toast.error("Failed to generate Telegram link");
+      setLinkModalOpen(false);
+    } finally {
+      setLinkLoading(false);
     }
   };
+
+  // While the link modal is open, poll /users/me until the bot's /start
+  // fires and binds telegram_id, then surface a confirmation and auto-close.
+  useEffect(() => {
+    if (!linkModalOpen || linkConnected) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await axios.get("/users/me");
+        if (res.data?.telegram_id) {
+          setLinkConnected(true);
+          await refreshUser();
+          clearInterval(interval);
+          setTimeout(() => setLinkModalOpen(false), 1500);
+        }
+      } catch {
+        // ignore — keep polling until modal closes
+      }
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [linkModalOpen, linkConnected, refreshUser]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -219,10 +251,11 @@ const StudentDashboard: React.FC = () => {
                       {user?.telegram_id ? (
                         <span className="text-[10px] font-bold text-success/80">ID: {user.telegram_id}</span>
                       ) : (
-                        <a
-                          href={user?.telegram_bot_link || `tg://resolve?domain=${import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'Altrium_Notification_Bot'}${user?.telegram_link_token ? `&start=${user.telegram_link_token}` : ''}`}
+                        <button
+                          type="button"
+                          onClick={handleOpenLinkModal}
                           className="text-[10px] font-bold text-accent hover:underline"
-                        >Link Bot</a>
+                        >Link Bot</button>
                       )}
                     </div>
                   </div>
@@ -504,6 +537,69 @@ const StudentDashboard: React.FC = () => {
         </div>
       </div>
 
+      {linkModalOpen && (
+        <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="relative w-full max-w-md bg-background border-2 border-border/10 rounded-[2.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.15)] p-10 text-center space-y-8">
+            <button
+              type="button"
+              onClick={() => setLinkModalOpen(false)}
+              className="absolute top-5 right-5 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-20 h-20 bg-accent/10 text-accent rounded-full flex items-center justify-center mx-auto mb-2">
+              <MessageSquare className="w-10 h-10" />
+            </div>
+
+            <div className="space-y-2">
+              <h2 className="text-3xl font-bold tracking-tight">Link Telegram</h2>
+              <p className="text-muted-foreground">
+                Connect your Telegram to receive degree status alerts.
+              </p>
+            </div>
+
+            {linkConnected ? (
+              <div className="bg-success/10 border border-success/30 rounded-2xl p-6 space-y-3 animate-in fade-in zoom-in-95 duration-300">
+                <div className="w-12 h-12 rounded-full bg-success/20 text-success flex items-center justify-center mx-auto">
+                  <CheckCircle2 className="w-7 h-7" />
+                </div>
+                <h3 className="font-semibold text-sm uppercase tracking-wider text-success">Telegram Connected</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Your account is linked. You'll start receiving alerts shortly.
+                </p>
+              </div>
+            ) : (
+              <div className="bg-muted/50 rounded-2xl p-6 space-y-4 border">
+                <h3 className="font-semibold text-sm uppercase tracking-wider text-accent">Open Telegram & Press Start</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Click the button below — Telegram will open and link your account automatically.
+                </p>
+
+                {linkLoading || !linkData ? (
+                  <div className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Generating secure link…
+                  </div>
+                ) : (
+                  <a
+                    href={linkData.link}
+                    className="block w-full py-2.5 px-5 rounded-xl bg-[#229ED9] text-white text-xs font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#229ED9]/10 active:scale-95"
+                  >
+                    <Send className="w-4 h-4" />
+                    Connect Telegram
+                  </a>
+                )}
+
+                <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Waiting for connection…
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

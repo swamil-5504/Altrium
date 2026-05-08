@@ -18,7 +18,7 @@ export default function Register() {
   const [fullName, setFullName] = useState("");
   const [collegeName, setCollegeName] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [role] = useState<"STUDENT" | "ADMIN">(roleFromQuery);
+  const [role, setRole] = useState<"STUDENT" | "ADMIN">(roleFromQuery);
   const [prnNumber, setPrnNumber] = useState("");
   const [successData, setSuccessData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -130,10 +130,23 @@ export default function Register() {
         <h2 className="text-2xl font-bold mb-2">{role === "ADMIN" ? t('register.heading') : t('register.heading')}</h2>
         <p className="text-muted-foreground text-sm mb-6">{t('register.subtitle')}</p>
 
-        <div className="flex items-center justify-center px-4 py-2.5 bg-muted rounded-lg mb-4">
-          <span className="text-sm font-medium text-foreground">
-            {role === "ADMIN" ? t('login.adminRole') : t('login.studentRole')}
-          </span>
+        <div className="grid grid-cols-2 bg-muted p-1 rounded-lg mb-4">
+          <button
+            type="button"
+            onClick={() => setRole("STUDENT")}
+            className={`py-2 text-sm font-medium rounded-md transition-all ${role === "STUDENT" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+          >
+            {t('login.studentRole')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setRole("ADMIN")}
+            className={`py-2 text-sm font-medium rounded-md transition-all ${role === "ADMIN" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+          >
+            {t('login.adminRole')}
+          </button>
         </div>
 
         {role === "STUDENT" && (
