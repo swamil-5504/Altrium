@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fastapi import HTTPException, status
 
 from app.core.config import settings
@@ -14,7 +16,7 @@ from app.core.security import (
 )
 from app.crud.crud import UserCRUD
 from app.crud.crud import UserCRUD
-from app.models.models import BlacklistedToken, User
+from app.models.models import BlacklistedToken, Institution, User, UserRole
 from app.crud.crud import UserCRUD
 from app.schemas.schemas import LoginRequest, RegisterRequest
 from app.services.telegram_bot import service as tg_service
@@ -29,7 +31,43 @@ class AuthService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Email already registered",
             )
+
+        # Issuer-trust gate: only ADMIN role is enforced because admins are
+        # the parties that mint credentials. Students are recipients and not
+        # gated. Existing admins predating this gate are grandfathered (they
+        # don't go through register() again).
+        institution_doc: Optional[Institution] = None
+        if request.role == UserRole.ADMIN:
+            if not request.college_name or not request.college_name.strip():
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="College name is required for admin registration",
+                )
+            # Case-insensitive exact match against the accreditation registry.
+            import re
+            pattern = f"^{re.escape(request.college_name.strip())}$"
+            institution_doc = await Institution.find_one(
+                {"name": {"$regex": pattern, "$options": "i"}, "is_active": True}
+            )
+            if institution_doc is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=(
+                        "Institution not found in the accreditation registry. "
+                        "Please select an accredited institution from the list, "
+                        "or contact the platform admin to add yours."
+                    ),
+                )
+
         user = await UserCRUD.create(request)
+        # Bind the verified institution to the new admin so the public verify
+        # response can show the accreditation badge without re-resolving.
+        if institution_doc is not None:
+            user.institution_id = institution_doc.id
+            # Snap the stored college_name to the canonical registry casing so
+            # downstream hash/match logic stays deterministic.
+            user.college_name = institution_doc.name
+            await user.save()
         # Fire-and-forget registration notification (Students only)
         if user.role == "STUDENT":
             asyncio.create_task(

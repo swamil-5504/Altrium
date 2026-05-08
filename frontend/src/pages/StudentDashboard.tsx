@@ -210,7 +210,10 @@ const StudentDashboard: React.FC = () => {
                       {user?.telegram_id ? (
                         <span className="text-[10px] font-bold text-success/80">ID: {user.telegram_id}</span>
                       ) : (
-                        <a href={user?.telegram_bot_link || "#"} target="_blank" className="text-[10px] font-bold text-accent hover:underline">Link Bot</a>
+                        <a
+                          href={user?.telegram_bot_link || `tg://resolve?domain=${import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'Altrium_Notification_Bot'}${user?.telegram_link_token ? `&start=${user.telegram_link_token}` : ''}`}
+                          className="text-[10px] font-bold text-accent hover:underline"
+                        >Link Bot</a>
                       )}
                     </div>
                   </div>

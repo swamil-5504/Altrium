@@ -44,6 +44,7 @@ class User(Document):
     # to approve + mint credentials.
     is_legal_admin_verified: bool = False
     college_name: Optional[str] = None
+    institution_id: Optional[UUID] = None
     college_logo: Optional[str] = None
     wallet_address: Optional[str] = None
     verification_document_path: Optional[str] = None
@@ -106,6 +107,23 @@ class BulkBatch(Document):
         indexes = [
             IndexModel([("created_at", ASCENDING)], expireAfterSeconds=86400),
         ]
+
+
+class Institution(Document):
+    """Accredited issuer registry. Admins must register against an entry here
+    so we can prove the issuer claim (e.g. "Harvard University") corresponds to
+    a real, accredited institution rather than free-text. Existing admins
+    pre-dating this registry are grandfathered (institution_id stays None)."""
+    id: UUID = Field(default_factory=uuid4)
+    name: str = Indexed(unique=True)
+    accreditation_id: Optional[str] = None
+    accreditation_body: Optional[str] = None
+    country: str = "IN"
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    class Settings:
+        name = "institutions"
 
 
 class BlacklistedToken(Document):

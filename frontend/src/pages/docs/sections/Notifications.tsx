@@ -18,7 +18,7 @@ const Notifications = () => (
       </p>
       <ul className="list-disc pl-5 space-y-2 mt-3 marker:text-[#2563eb]">
         <li><strong>Handshake:</strong> Students click "Link Telegram" in their dashboard, which generates a secure, one-time token.</li>
-        <li><strong>Deep Linking:</strong> The button opens a deep link (<code>t.me/Altrium_Bot?start=TOKEN</code>).</li>
+        <li><strong>Deep Linking:</strong> The button opens a deep link (<code>t.me/Altrium_Notification_Bot?start=TOKEN</code>).</li>
         <li><strong>Verification:</strong> Upon clicking "Start", the bot verifies the token and instantly pairs the Telegram identity with the Altrium account.</li>
       </ul>
     </Sub>

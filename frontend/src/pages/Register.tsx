@@ -20,19 +20,30 @@ export default function Register() {
   const [fullName, setFullName] = useState("");
   const [collegeName, setCollegeName] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [role, setRole] = useState<"STUDENT" | "ADMIN">(roleFromQuery);
+  const [role] = useState<"STUDENT" | "ADMIN">(roleFromQuery);
   const [prnNumber, setPrnNumber] = useState("");
   const [successData, setSuccessData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [universities, setUniversities] = useState<string[]>([]);
 
   useEffect(() => {
+    // Pull from the accreditation registry (single source of truth that the
+    // backend also uses to gate admin registrations). Falls back silently to
+    // the legacy /users/universities endpoint if the registry is unreachable
+    // so the page still renders during transient backend errors.
     const fetchUniversities = async () => {
       try {
-        const response = await axios.get("/users/universities");
-        setUniversities(response.data);
+        const response = await axios.get("/institutions");
+        const names = (response.data || []).map((i: { name: string }) => i.name);
+        setUniversities(names);
       } catch (err) {
-        console.error("Failed to fetch universities", err);
+        console.error("Failed to fetch institutions, falling back", err);
+        try {
+          const fallback = await axios.get("/users/universities");
+          setUniversities(fallback.data || []);
+        } catch (fallbackErr) {
+          console.error("Fallback fetch failed", fallbackErr);
+        }
       }
     };
     void fetchUniversities();
@@ -103,23 +114,10 @@ export default function Register() {
         <h2 className="text-2xl font-bold mb-2">{role === "ADMIN" ? t('register.heading') : t('register.heading')}</h2>
         <p className="text-muted-foreground text-sm mb-6">{t('register.subtitle')}</p>
 
-        <div className="flex bg-muted p-1 rounded-lg mb-4">
-          <button
-            type="button"
-            onClick={() => setRole("STUDENT")}
-            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${role === "STUDENT" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-              }`}
-          >
-            {t('login.studentRole')}
-          </button>
-          <button
-            type="button"
-            onClick={() => setRole("ADMIN")}
-            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${role === "ADMIN" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-              }`}
-          >
-            {t('login.adminRole')}
-          </button>
+        <div className="flex items-center justify-center px-4 py-2.5 bg-muted rounded-lg mb-4">
+          <span className="text-sm font-medium text-foreground">
+            {role === "ADMIN" ? t('login.adminRole') : t('login.studentRole')}
+          </span>
         </div>
 
         {role === "STUDENT" && (
@@ -149,27 +147,17 @@ export default function Register() {
             <label className="text-sm font-medium">{t('register.collegeName')}</label>
             <div className="relative">
               <Building2 className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              {role === "STUDENT" ? (
-                <select
-                  className="w-full pl-9 pr-4 py-2.5 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-accent appearance-none transition-all cursor-pointer"
-                  value={collegeName}
-                  onChange={(e) => setCollegeName(e.target.value)}
-                  required
-                >
-                  <option value="" disabled>{t('register.collegeNamePlaceholder')}</option>
-                  {universities.map((uni) => (
-                    <option key={uni} value={uni}>{uni}</option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  value={collegeName}
-                  onChange={(e) => setCollegeName(e.target.value)}
-                  required
-                  className="w-full pl-9 pr-4 py-2.5 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all"
-                  placeholder={t('register.collegeNamePlaceholder')}
-                />
-              )}
+              <select
+                className="w-full pl-9 pr-4 py-2.5 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-accent appearance-none transition-all cursor-pointer"
+                value={collegeName}
+                onChange={(e) => setCollegeName(e.target.value)}
+                required
+              >
+                <option value="" disabled>{t('register.collegeNamePlaceholder')}</option>
+                {universities.map((uni) => (
+                  <option key={uni} value={uni}>{uni}</option>
+                ))}
+              </select>
             </div>
           </div>
 

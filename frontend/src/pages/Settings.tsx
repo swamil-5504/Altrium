@@ -38,6 +38,17 @@ export default function Settings() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(user?.college_logo ? `${import.meta.env.VITE_API_URL}${user.college_logo}` : null);
 
+  // Sync state with user data when it loads or refreshes
+  useEffect(() => {
+    if (user) {
+      setFullName(user.full_name || "");
+      setCollegeName(user.college_name || "");
+      if (user.college_logo) {
+        setLogoPreview(`${import.meta.env.VITE_API_URL}${user.college_logo}`);
+      }
+    }
+  }, [user]);
+
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -310,12 +321,12 @@ export default function Settings() {
                               <Check className="w-3 h-3" /> Connected
                             </div>
                           ) : (
-                            <button 
-                              onClick={() => window.open(`tg://resolve?domain=${import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'Altrium_Notification_Bot'}&start=${user.telegram_link_token}`)}
+                            <a
+                              href={user.telegram_bot_link || `tg://resolve?domain=${import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'Altrium_Notification_Bot'}&start=${user.telegram_link_token || ''}`}
                               className="px-4 py-2 rounded-xl bg-[#229ED9] text-white text-[10px] font-bold hover:opacity-90 transition-all"
                             >
                               Connect Bot
-                            </button>
+                            </a>
                           )}
                         </div>
                       </div>

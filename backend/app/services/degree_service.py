@@ -1,3 +1,4 @@
+import asyncio
 import io
 import os
 import shutil
@@ -31,6 +32,31 @@ REGISTRY_ABI = [
         ],
         "outputs": [{"name": "tokenId", "type": "uint256"}],
         "stateMutability": "nonpayable",
+    },
+    {
+        "type": "function",
+        "name": "getDegree",
+        "inputs": [{"name": "collegeIdHash", "type": "bytes32"}],
+        "outputs": [
+            {"name": "exists", "type": "bool"},
+            {"name": "tokenId", "type": "uint256"},
+            {
+                "name": "record",
+                "type": "tuple",
+                "components": [
+                    {"name": "collegeIdHash", "type": "bytes32"},
+                    {"name": "issuedBy", "type": "address"},
+                    {"name": "issuedAt", "type": "uint64"},
+                    {"name": "verified", "type": "bool"},
+                    {"name": "degreeHash", "type": "bytes32"},
+                    {"name": "revoked", "type": "bool"},
+                    {"name": "revokedAt", "type": "uint64"},
+                    {"name": "revokedBy", "type": "address"},
+                ],
+            },
+            {"name": "degreeURI", "type": "string"},
+        ],
+        "stateMutability": "view",
     }
 ]
 
@@ -267,6 +293,97 @@ class DegreeService:
     @staticmethod
     async def get_all_public() -> List[Credential]:
         return await CredentialCRUD.get_all_approved()
+
+    @staticmethod
+    def compute_degree_hash(credential: Credential) -> str:
+        """
+        Computes the cryptographic hash of the degree data.
+        MUST match the frontend logic in UniversityAdmin.tsx and EmployerVerify.tsx.
+        """
+        import json
+        from web3 import Web3
+        
+        m = credential.metadata_json or {}
+        # Support legacy field names and handle numeric types
+        extracted_student_name = m.get("studentName") or m.get("name") or m.get("student_name") or "Student"
+        
+        payload = {
+            "studentName": str(extracted_student_name),
+            "passingYear": str(m.get("passingYear") or m.get("passing_year") or ""),
+            "entryYear": str(m.get("entryYear") or m.get("entry_year") or ""),
+            "cgpa": str(m.get("cgpa") or ""),
+            "credits": str(m.get("credits") or ""),
+            "degreeTitle": str(credential.title),
+            "degreeDescription": str(credential.description or ""),
+        }
+        
+        # Use separators=(',', ':') to remove whitespace, matching JS JSON.stringify()
+        json_str = json.dumps(payload, separators=(',', ':'))
+        h = Web3.keccak(text=json_str).hex()
+        return h if h.startswith("0x") else "0x" + h
+
+    @staticmethod
+    async def enrich_with_verification(credentials: List[Credential]) -> List[dict]:
+        """
+        Enriches a list of credentials with server-side blockchain verification details.
+        """
+        if not settings.WEB3_PROVIDER_URI or not settings.CONTRACT_REGISTRY_ADDRESS:
+            return [c.model_dump() for c in credentials]
+
+        w3 = Web3(Web3.HTTPProvider(settings.WEB3_PROVIDER_URI))
+        contract = w3.eth.contract(address=settings.CONTRACT_REGISTRY_ADDRESS, abi=REGISTRY_ABI)
+        
+        # Pre-load active institution names once so each cred lookup is cheap.
+        # Wrapped in try/except so a registry read failure can never break the
+        # pre-existing on-chain verification flow that legacy callers depend on.
+        from app.models.models import Institution
+        accredited_map = {}
+        try:
+            insts = await Institution.find({"is_active": True}).to_list()
+            for inst in insts:
+                accredited_map[(inst.name or "").strip().lower()] = inst.accreditation_id
+        except Exception as e:
+            print(f"Institution lookup skipped (non-fatal): {e}")
+
+        def _verify_one(cred: Credential) -> dict:
+            data = cred.model_dump()
+            data["server_verified"] = False
+            data["hash_match"] = False
+            data["on_chain_hash"] = None
+            cname_key = (cred.college_name or "").strip().lower()
+            if cname_key in accredited_map:
+                data["institution_accredited"] = True
+                data["institution_accreditation_id"] = accredited_map[cname_key]
+            else:
+                data["institution_accredited"] = False
+                data["institution_accreditation_id"] = None
+
+            try:
+                university_name = cred.college_name or "Altrium University"
+                combined_string = f"{cred.prn_number}-{university_name}-{cred.title}"
+                college_id_hash = Web3.keccak(text=combined_string)
+                exists, token_id, record, degree_uri = contract.functions.getDegree(college_id_hash).call()
+
+                if not exists:
+                    combined_string_legacy = f"{cred.prn_number}-{university_name}"
+                    college_id_hash_legacy = Web3.keccak(text=combined_string_legacy)
+                    exists, token_id, record, degree_uri = contract.functions.getDegree(college_id_hash_legacy).call()
+
+                if exists:
+                    data["server_verified"] = True
+                    on_chain_hash_raw = record[4].hex()
+                    on_chain_hash = on_chain_hash_raw if on_chain_hash_raw.startswith("0x") else "0x" + on_chain_hash_raw
+                    data["on_chain_hash"] = on_chain_hash
+                    local_hash = DegreeService.compute_degree_hash(cred)
+                    data["hash_match"] = (on_chain_hash.lower() == local_hash.lower())
+            except Exception as e:
+                print(f"Error verifying credential {cred.id} on-chain: {e}")
+            return data
+
+        enriched_results = await asyncio.gather(
+            *(asyncio.to_thread(_verify_one, c) for c in credentials)
+        )
+        return list(enriched_results)
 
     @staticmethod
     async def update_status(credential_id: UUID, status_value: CredentialStatus, admin_id: UUID = None) -> Credential:

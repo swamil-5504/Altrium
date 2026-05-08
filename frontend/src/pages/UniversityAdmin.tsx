@@ -129,6 +129,7 @@ const UniversityAdmin: React.FC = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [activeTab, setActiveTab] = useState<"workflow" | "students">("workflow");
   const [workflowPhase, setWorkflowPhase] = useState<1 | 2>(1);
+  const [ingestionCompleted, setIngestionCompleted] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const { open } = useAppKit();
@@ -639,16 +640,21 @@ const UniversityAdmin: React.FC = () => {
                         <h3 className="text-xl font-bold tracking-tight">Official Document Ingestion</h3>
                         <p className="text-sm text-muted-foreground">Match university-issued PDFs with student PRNs.</p>
                       </div>
-                      <button 
+                      <button
                         onClick={() => setWorkflowPhase(2)}
-                        className="group flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/60 hover:bg-accent hover:text-accent-foreground transition-all text-[11px] font-bold uppercase tracking-wider"
+                        className={`group flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all text-[11px] font-bold uppercase tracking-wider ${
+                          ingestionCompleted
+                            ? "bg-accent text-accent-foreground hover:opacity-90 shadow-lg shadow-accent/10"
+                            : "bg-muted/60 hover:bg-accent hover:text-accent-foreground"
+                        }`}
                       >
-                        Skip to Minting
+                        {ingestionCompleted ? "Go to Minting" : "Skip to Minting"}
                         <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
                       </button>
                     </div>
                     <div className="glass-card rounded-[2.5rem] p-8 border-2 border-accent/5">
                       <BulkUploadWizard onCommitted={() => {
+                        setIngestionCompleted(true);
                         void fetchCredentials();
                       }} />
                     </div>

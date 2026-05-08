@@ -121,8 +121,7 @@
   }
 
   .glass-card {
-    @apply bg-background/80 backdrop-blur-sm border border-border/60 shadow-sm;
-    @apply bg-background/80 backdrop-blur-sm border border-border/60 shadow-sm;
+    @apply bg-background border border-border/10 shadow-[0_20px_50px_rgba(0,0,0,0.08)] transition-all duration-300;
   }
 
   .surface-elevated {

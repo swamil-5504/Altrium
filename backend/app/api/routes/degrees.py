@@ -14,7 +14,7 @@ from app.api.deps.auth import (
 )
 from app.core.config import settings
 from app.core.limiter import limiter
-from app.models.models import User, UserRole
+from app.models.models import User, UserRole, Credential
 from app.schemas.schemas import CredentialCreate, CredentialResponse, CredentialStatus, CredentialUpdate
 from app.services.degree_service import DegreeService
 # Telegram notification service used below via local import
@@ -28,8 +28,8 @@ def _to_response(cred) -> dict:
     return data
 
 
-async def _enrich_creds_with_logos(creds: List[Credential]) -> List[dict]:
-    """Helper to fetch current college logos for a list of credentials."""
+async def _enrich_credential_data(creds: List[Credential], include_verification: bool = False) -> List[dict]:
+    """Helper to fetch current college logos and optionally verify blockchain integrity."""
     unique_colleges = list(set(c.college_name for c in creds if c.college_name))
     logo_map = {}
     if unique_colleges:
@@ -41,12 +41,17 @@ async def _enrich_creds_with_logos(creds: List[Credential]) -> List[dict]:
             if admin.college_name and admin.college_logo:
                 logo_map[admin.college_name] = admin.college_logo
 
-    results = []
-    for c in creds:
-        data = _to_response(c)
-        if c.college_name in logo_map:
-            data["college_logo"] = logo_map[c.college_name]
-        results.append(data)
+    if include_verification:
+        # First get verification data
+        results = await DegreeService.enrich_with_verification(creds)
+    else:
+        results = [_to_response(c) for c in creds]
+
+    for data in results:
+        college_name = data.get("college_name")
+        if college_name in logo_map:
+            data["college_logo"] = logo_map[college_name]
+    
     return results
 
 
@@ -56,14 +61,14 @@ async def create_degree(
     current_user: User = Depends(require_role(UserRole.STUDENT)),
 ):
     cred = await DegreeService.create_submission(credential_create, current_user)
-    enriched = await _enrich_creds_with_logos([cred])
+    enriched = await _enrich_credential_data([cred])
     return enriched[0]
 
 
 @router.get("/", response_model=List[CredentialResponse])
 async def get_degrees(current_user: User = Depends(get_current_user)):
     creds = await DegreeService.list_for_user(current_user)
-    return await _enrich_creds_with_logos(creds)
+    return await _enrich_credential_data(creds, include_verification=False)
 
 
 @router.get("/public", response_model=List[CredentialResponse])
@@ -75,7 +80,7 @@ async def get_public_degrees(request: Request, prn_number: str = None, email: st
         creds = await DegreeService.get_public_by_email(email)
     else:
         creds = await DegreeService.get_all_public()
-    return await _enrich_creds_with_logos(creds)
+    return await _enrich_credential_data(creds, include_verification=True)
 
 
 @router.get("/{credential_id}", response_model=CredentialResponse)
@@ -84,7 +89,7 @@ async def get_degree(
     current_user: User = Depends(get_current_user),
 ):
     cred = await DegreeService.get_by_id_for_user(credential_id, current_user)
-    enriched = await _enrich_creds_with_logos([cred])
+    enriched = await _enrich_credential_data([cred], include_verification=True)
     return enriched[0]
 
 
