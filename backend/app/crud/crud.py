@@ -1,6 +1,7 @@
 from uuid import UUID, uuid4
 from typing import List, Optional
 from datetime import datetime
+import secrets
 from app.models.models import User, Credential, UserRole, CredentialStatus
 from app.schemas.schemas import UserCreate, UserUpdate, CredentialCreate, CredentialUpdate
 from app.core.security import hash_password, verify_password
@@ -23,6 +24,9 @@ class UserCRUD:
         telegram_id = user_data.get("telegram_id")
         if telegram_id:
             await User.find(User.telegram_id == telegram_id).update({"$set": {"telegram_id": None}})
+            
+        # Generate a unique linking token for Telegram
+        user_data["telegram_link_token"] = secrets.token_urlsafe(16)
             
         user = User(**user_data)
         await user.insert()
@@ -73,8 +77,9 @@ class CredentialCRUD:
         credential_create: CredentialCreate,
         issued_to_id: UUID,
         issued_by_id: UUID,
+        initial_status: Optional[CredentialStatus] = None,
     ) -> Credential:
-        credential = Credential(
+        kwargs = dict(
             title=credential_create.title,
             description=credential_create.description,
             issued_to_id=issued_to_id,
@@ -84,8 +89,12 @@ class CredentialCRUD:
             tx_hash=credential_create.tx_hash,
             prn_number=credential_create.prn_number,
             college_name=credential_create.college_name,
-            document_uid=f"DOC-{uuid4().hex[:12].upper()}"
+            degree_type=credential_create.degree_type,
+            document_uid=f"DOC-{uuid4().hex[:12].upper()}",
         )
+        if initial_status is not None:
+            kwargs["status"] = initial_status
+        credential = Credential(**kwargs)
         await credential.insert()
         return credential
 

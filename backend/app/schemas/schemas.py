@@ -15,9 +15,22 @@ class UserRole(str, Enum):
 
 
 class CredentialStatus(str, Enum):
+    REQUESTED = "REQUESTED"
     PENDING = "PENDING"
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
+
+
+class DegreeType(str, Enum):
+    BTECH = "BTECH"
+    BSC = "BSC"
+    MTECH = "MTECH"
+    MBA = "MBA"
+
+
+class BulkBatchStatus(str, Enum):
+    READY = "READY"
+    COMMITTED = "COMMITTED"
 
 
 # ---------------------------------------------------------------------------
@@ -52,6 +65,7 @@ class UserBase(BaseModel):
     wallet_address: Optional[str] = Field(None, pattern=WALLET_ADDRESS_PATTERN)
     prn_number: Optional[str] = None
     telegram_id: Optional[str] = None
+    college_logo: Optional[str] = None
 
     @field_validator("full_name", "college_name", mode="before")
     @classmethod
@@ -66,43 +80,18 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     full_name: Optional[str] = Field(None, max_length=100)
     role: Optional[UserRole] = None
-
-    @field_validator("full_name", mode="before")
-    @classmethod
-    def _scrub_text(cls, v):
-        return _strip_control(v) if isinstance(v, str) else v
-
-
-class UserResponse(BaseModel):
-    id: UUID
-    email: str
-    full_name: Optional[str] = Field(None, max_length=100)
-    role: UserRole = UserRole.STUDENT
     college_name: Optional[str] = Field(None, max_length=150)
-    wallet_address: Optional[str] = Field(None, pattern=WALLET_ADDRESS_PATTERN)
-    prn_number: Optional[str] = None
-    telegram_id: Optional[str] = None
-
-    @field_validator("full_name", "college_name", mode="before")
-    @classmethod
-    def _scrub_text(cls, v):
-        return _strip_control(v) if isinstance(v, str) else v
-
-
-class UserCreate(UserBase):
-    password: str = Field(...)
-
-
-
-
-class UserUpdate(BaseModel):
-    full_name: Optional[str] = Field(None, max_length=100)
-    role: Optional[UserRole] = None
+    college_logo: Optional[str] = None
 
     @field_validator("full_name", mode="before")
     @classmethod
     def _scrub_text(cls, v):
         return _strip_control(v) if isinstance(v, str) else v
+
+
+
+
+
 
 
 class UserResponse(BaseModel):
@@ -111,16 +100,36 @@ class UserResponse(BaseModel):
     full_name: Optional[str] = None
     role: UserRole = UserRole.STUDENT
     college_name: Optional[str] = None
+    college_logo: Optional[str] = None
     wallet_address: Optional[str] = None
-    phone_number: Optional[str] = None
     telegram_id: Optional[str] = None
+    telegram_link_token: Optional[str] = None
     prn_number: Optional[str] = None
+    college_logo: Optional[str] = None
     is_active: bool
     is_legal_admin_verified: bool = False
     created_at: datetime
 
+    @property
+    def telegram_bot_link(self) -> Optional[str]:
+        if not self.telegram_link_token:
+            return None
+        import os
+        bot_name = os.getenv("TELEGRAM_BOT_USERNAME", "Altrium_Notification_Bot")
+        return f"tg://resolve?domain={bot_name}&start={self.telegram_link_token}"
+
     class Config:
         from_attributes = True
+        # Allow the property to be serialized in the response
+        json_encoders = {
+            datetime: lambda v: v.isoformat(),
+        }
+        
+    # For Pydantic v2 compatibility if needed
+    def model_dump(self, *args, **kwargs):
+        data = super().model_dump(*args, **kwargs)
+        data["telegram_bot_link"] = self.telegram_bot_link
+        return data
 
 
 class WalletPatchRequest(BaseModel):
@@ -147,6 +156,7 @@ class CredentialCreate(CredentialBase):
     tx_hash: Optional[str] = Field(None, pattern=TX_HASH_PATTERN)
     prn_number: Optional[str] = None
     college_name: Optional[str] = Field(None, max_length=150)
+    degree_type: Optional[DegreeType] = None
 
     @field_validator("college_name", mode="before")
     @classmethod
@@ -178,6 +188,8 @@ class CredentialResponse(CredentialBase):
     tx_hash: Optional[str] = Field(None, pattern=TX_HASH_PATTERN)
     prn_number: Optional[str] = None
     college_name: Optional[str] = None
+    college_logo: Optional[str] = None
+    degree_type: Optional[DegreeType] = None
     document_uid: Optional[str] = None
     has_document: bool = False
     revoked: bool = False
@@ -227,3 +239,52 @@ class ForgotPasswordRequest(_PasswordPayload):
 
 class ChangePasswordRequest(_PasswordPayload):
     old_password: str
+
+
+# ---------------------------------------------------------------------------
+# Bulk upload schemas
+# ---------------------------------------------------------------------------
+class RequestedRowResponse(BaseModel):
+    credential_id: UUID
+    prn_number: Optional[str] = None
+    student_name: Optional[str] = None
+    student_email: Optional[str] = None
+    description: Optional[str] = None
+    metadata_json: Optional[dict] = None
+    created_at: datetime
+
+
+class BulkMatchedRow(BaseModel):
+    credential_id: UUID
+    prn_number: str
+    student_name: Optional[str] = None
+    pdf_filename: str
+    selected: bool = True
+
+
+class BulkMatchResponse(BaseModel):
+    batch_id: UUID
+    degree_type: DegreeType
+    matched_rows: List[BulkMatchedRow]
+    unmatched_request_prns: List[str]
+    orphan_pdf_filenames: List[str]
+    created_at: datetime
+
+
+class BulkCommitRequest(BaseModel):
+    deselected_credential_ids: List[UUID] = Field(default_factory=list)
+
+
+class BulkCommitResultRow(BaseModel):
+    credential_id: UUID
+    prn_number: str
+    status: str
+    error: Optional[str] = None
+
+
+class BulkCommitResponse(BaseModel):
+    batch_id: UUID
+    committed_count: int
+    skipped_count: int
+    failed_count: int
+    rows: List[BulkCommitResultRow]

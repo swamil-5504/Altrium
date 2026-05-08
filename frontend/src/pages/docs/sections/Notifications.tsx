@@ -4,31 +4,38 @@ const Notifications = () => (
   <DocPage
     kicker="Platform ops"
     title="Telegram Bot"
-    summary="How Altrium uses a central Telegram Bot to push instant notifications for Degree Approvals, Rejections, and Registration Events."
+    summary="How Altrium uses an interactive Telegram Bot for instant notifications, document delivery, and secure student handshake."
   >
     <Sub id="overview" title="Overview">
       <p>
-        Instead of managing a complex email infrastructure, Altrium leverages Telegram for instant, reliable push notifications. The bot operates in a <strong>push-only</strong> mode — it does not read user messages or respond to commands.
+        Altrium leverages an interactive Telegram Bot for instant, reliable push notifications. The bot has evolved from a simple push-service to an <strong>interactive assistant</strong> that handles account linking, status inquiries, and PDF document delivery.
       </p>
     </Sub>
 
-    <Sub id="production-setup" title="Production Setup">
+    <Sub id="magic-link" title="Magic Link Onboarding">
       <p>
-        In a production environment, you must use a single, central official bot.
+        Altrium uses an industry-standard <strong>"Magic Link"</strong> handshake for student onboarding. No more manual entry of Telegram IDs.
       </p>
-      <ol className="list-decimal pl-5 space-y-2 mt-3 marker:text-[#2563eb] dark:marker:text-[#60a5fa] marker:font-semibold">
-        <li>Create a single official bot via <K>@BotFather</K> on Telegram.</li>
-        <li>Set <K>TELEGRAM_BOT_TOKEN</K> in your backend <K>.env</K>.</li>
-        <li>Set <K>VITE_TELEGRAM_BOT_USERNAME</K> (e.g. <K>Altrium_Notification_Bot</K>) in your frontend <K>.env</K>.</li>
-      </ol>
-      <p className="mt-4">
-        When users register on the website, they will provide their personal Telegram ID and be instructed to click "Start" on your official bot. The backend uses the central token to securely message individual users.
-      </p>
+      <ul className="list-disc pl-5 space-y-2 mt-3 marker:text-[#2563eb]">
+        <li><strong>Handshake:</strong> Students click "Link Telegram" in their dashboard, which generates a secure, one-time token.</li>
+        <li><strong>Deep Linking:</strong> The button opens a deep link (<code>t.me/Altrium_Bot?start=TOKEN</code>).</li>
+        <li><strong>Verification:</strong> Upon clicking "Start", the bot verifies the token and instantly pairs the Telegram identity with the Altrium account.</li>
+      </ul>
     </Sub>
 
-    <Sub id="local-dev" title="Local Development">
+    <Sub id="bot-features" title="Interactive Features">
+      <p>Once linked, students can interact with the bot using natural language or commands:</p>
+      <ul className="list-disc pl-5 space-y-2 mt-3">
+        <li><code>/start</code> - Check connection status or link a new account.</li>
+        <li><code>/link [email]</code> - Alternative method to request a new link token.</li>
+        <li><strong>Inquiries:</strong> Ask "What's my status?" or "Show my degrees" for real-time updates.</li>
+        <li><strong>Document Delivery:</strong> Ask "Get my degree PDF" to have the bot securely stream your verified credentials directly into the chat.</li>
+      </ul>
+    </Sub>
+
+    <Sub id="security" title="Security & Cleanup">
       <p>
-        For local testing, do not use the production token. Create your own test bot via <K>@BotFather</K>, grab the token, and put it in your local <K>.env</K> files. Users never need to create their own bots.
+        The integration is designed with <strong>1-to-1 isolation</strong>. If a user blocks the bot or deletes their chat, Altrium detects the "Forbidden" status and automatically unlinks the account to protect privacy.
       </p>
     </Sub>
   </DocPage>

@@ -4,7 +4,16 @@ import { toast } from "sonner";
 import { extractErrorMessage } from "@/utils/errors";
 import { Navbar } from "@/components/Navbar";
 import { ScrollReveal } from "@/components/ScrollReveal";
-import { Upload, FileText, CreditCard, Clock, Shield, XCircle, ArrowRight, Eye, User as UserIcon, Mail, Building2 } from "lucide-react";
+import { Upload, CreditCard, Clock, Shield, XCircle, ArrowRight, Eye, User as UserIcon, Mail, Building2, FileText, MessageSquare, RefreshCcw } from "lucide-react";
+
+type DegreeType = "BTECH" | "BSC" | "MTECH" | "MBA";
+
+const DEGREE_TYPE_OPTIONS: { value: DegreeType; label: string }[] = [
+  { value: "BTECH", label: "BTech" },
+  { value: "BSC", label: "BSc" },
+  { value: "MTECH", label: "MTech" },
+  { value: "MBA", label: "MBA" },
+];
 import { useAuth } from "@/context/AuthContext";
 import { useTranslation } from "react-i18next";
 
@@ -26,7 +35,7 @@ interface Credential {
 }
 
 const StudentDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { t } = useTranslation();
   const [submissions, setSubmissions] = useState<Credential[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,7 +45,6 @@ const StudentDashboard: React.FC = () => {
   const pendingCount = submissions.filter((sub) => sub.status === "PENDING").length;
 
   const [showForm, setShowForm] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     prn_number: user?.prn_number || "",
     studentName: user?.full_name || "",
@@ -44,7 +52,7 @@ const StudentDashboard: React.FC = () => {
     passingYear: "",
     cgpa: "",
     credits: "",
-    title: "",
+    degree_type: "" as DegreeType | "",
     description: "",
     college_name: user?.college_name || "",
   });
@@ -96,16 +104,23 @@ const StudentDashboard: React.FC = () => {
     }
   };
 
+  const handleRelink = async () => {
+    try {
+      const response = await axios.get("/telegram/link-token");
+      toast.success("New link generated! Please connect again.");
+      await refreshUser();
+      // Optionally open the link automatically
+      window.open(response.data.link, "_blank");
+    } catch (err) {
+      toast.error("Failed to generate new link");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.prn_number || !formData.title) {
+    if (!formData.prn_number || !formData.degree_type) {
       toast.error(t("studentDashboard.toasts.requiredFields"));
-      return;
-    }
-
-    if (!file) {
-      toast.error(t("studentDashboard.toasts.selectPdf"));
       return;
     }
 
@@ -118,28 +133,21 @@ const StudentDashboard: React.FC = () => {
         credits: formData.credits,
       };
 
-      // Step 1: Create the degree submission
-      const response = await axios.post("/degrees", {
-        title: formData.title,
+      const titleLabel =
+        DEGREE_TYPE_OPTIONS.find((o) => o.value === formData.degree_type)?.label
+        ?? formData.degree_type;
+
+      await axios.post("/degrees", {
+        title: titleLabel,
+        degree_type: formData.degree_type,
         description: formData.description || null,
         prn_number: formData.prn_number,
         college_name: formData.college_name,
         metadata_json: studentBasicsPayload,
       });
 
-      const credentialId = response.data.id;
-
-      // Step 2: Upload the PDF document
-      const formDataUpload = new FormData();
-      formDataUpload.append("file", file);
-
-      await axios.post(`/degrees/${credentialId}/document`, formDataUpload, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
       toast.success(t("studentDashboard.toasts.submitSuccess"));
       setShowForm(false);
-      setFile(null);
       setFormData({
         prn_number: "",
         studentName: "",
@@ -147,7 +155,7 @@ const StudentDashboard: React.FC = () => {
         passingYear: "",
         cgpa: "",
         credits: "",
-        title: "",
+        degree_type: "",
         description: "",
         college_name: "",
       });
@@ -162,205 +170,236 @@ const StudentDashboard: React.FC = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
+      {/* Premium Matte Background */}
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-accent/5 blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-[120px]" />
+      </div>
+
       <div className="pt-24 pb-20">
         <div className="container mx-auto px-4 max-w-4xl">
           <ScrollReveal>
-            <div className="flex flex-col gap-4 mb-8 sm:flex-row sm:items-end sm:justify-between">
-              <div className="space-y-4">
-                <div>
-                  <h1 className="text-2xl md:text-3xl font-bold mb-1">{t("studentDashboard.title")}</h1>
-                  <p className="text-muted-foreground text-sm">{t("studentDashboard.subtitle")}</p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-x-5 gap-y-2 py-2 px-3 rounded-lg bg-muted/40 border text-xs sm:text-sm w-fit">
-                  <div className="flex items-center gap-1.5">
+            <div className="flex flex-col gap-6 mb-12 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-col gap-4">
+                <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{t("studentDashboard.title")}</h1>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-background border shadow-sm text-xs font-bold">
                     <UserIcon className="w-3.5 h-3.5 text-accent" />
-                    <span className="font-semibold">{user?.full_name || t("studentDashboard.fallbackStudent")}</span>
+                    <span>{user?.full_name || t("studentDashboard.fallbackStudent")}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-background border shadow-sm text-xs font-medium text-muted-foreground">
                     <Mail className="w-3.5 h-3.5" />
                     <span>{user?.email}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-background border shadow-sm text-xs font-medium text-muted-foreground">
                     <Building2 className="w-3.5 h-3.5" />
                     <span>{user?.college_name}</span>
                   </div>
                 </div>
               </div>
-              <button
-                onClick={() => setShowForm(!showForm)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity active:scale-[0.98]"
-              >
-                <Upload className="w-4 h-4" />
-                {t("studentDashboard.newSubmission")}
-              </button>
+
+              <div className="flex flex-col sm:flex-row items-center gap-3">
+                {/* Telegram Matte Indicator */}
+                <div className={`flex items-center gap-3 p-2.5 rounded-2xl border bg-background shadow-sm ${user?.telegram_id ? "border-success/20" : "border-border"}`}>
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${user?.telegram_id ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}>
+                    <MessageSquare className="w-4 h-4" />
+                  </div>
+                  <div className="pr-2">
+                    <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">{user?.telegram_id ? "Connected" : "Not Linked"}</p>
+                    <div className="flex items-center gap-2">
+                      {user?.telegram_id ? (
+                        <span className="text-[10px] font-bold text-success/80">ID: {user.telegram_id}</span>
+                      ) : (
+                        <a href={user?.telegram_bot_link || "#"} target="_blank" className="text-[10px] font-bold text-accent hover:underline">Link Bot</a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setShowForm(true)}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-accent text-accent-foreground text-xs font-bold hover:opacity-90 transition-all shadow-lg shadow-accent/10 active:scale-[0.98]"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  {t("studentDashboard.newSubmission")}
+                </button>
+              </div>
             </div>
           </ScrollReveal>
 
           <ScrollReveal delay={50}>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-              <div className="rounded-3xl border bg-card p-5 shadow-sm">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-3">{t("studentDashboard.pendingReview")}</p>
-                <div className="text-3xl font-bold tabular-nums">{pendingCount}</div>
-                <p className="text-sm text-muted-foreground mt-2">{t("studentDashboard.pendingReviewDesc")}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
+              <div className="rounded-[2rem] border-2 border-border/5 bg-background p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mb-4">{t("studentDashboard.pendingReview")}</p>
+                <div className="text-4xl font-bold tabular-nums">{pendingCount}</div>
+                <p className="text-xs font-medium text-muted-foreground/60 mt-3">{t("studentDashboard.pendingReviewDesc")}</p>
               </div>
-              <div className="rounded-3xl border bg-card p-5 shadow-sm">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-3">{t("studentDashboard.approved")}</p>
-                <div className="text-3xl font-bold tabular-nums">{approvedCount}</div>
-                <p className="text-sm text-muted-foreground mt-2">{t("studentDashboard.approvedDesc")}</p>
+              <div className="rounded-[2rem] border-2 border-border/5 bg-background p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mb-4">{t("studentDashboard.approved")}</p>
+                <div className="text-4xl font-bold tabular-nums text-success">{approvedCount}</div>
+                <p className="text-xs font-medium text-muted-foreground/60 mt-3">{t("studentDashboard.approvedDesc")}</p>
               </div>
-              <div className="rounded-3xl border bg-card p-5 shadow-sm">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-3">{t("studentDashboard.rejected")}</p>
-                <div className="text-3xl font-bold tabular-nums">{rejectedCount}</div>
-                <p className="text-sm text-muted-foreground mt-2">{t("studentDashboard.rejectedDesc")}</p>
+              <div className="rounded-[2rem] border-2 border-border/5 bg-background p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mb-4">{t("studentDashboard.rejected")}</p>
+                <div className="text-4xl font-bold tabular-nums text-destructive">{rejectedCount}</div>
+                <p className="text-xs font-medium text-muted-foreground/60 mt-3">{t("studentDashboard.rejectedDesc")}</p>
               </div>
             </div>
           </ScrollReveal>
 
           {showForm && (
-            <ScrollReveal>
-              <form onSubmit={handleSubmit} className="p-6 rounded-xl border bg-card mb-8 space-y-5">
-                <h3 className="font-semibold text-lg">{t("studentDashboard.form.title")}</h3>
-
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5 opacity-70">{t("studentDashboard.form.prnNumber")}</label>
-                    <input
-                      type="text"
-                      value={formData.prn_number}
-                      readOnly
-                      className="w-full px-3 py-2.5 rounded-lg border bg-muted text-sm cursor-not-allowed outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">{t("studentDashboard.form.studentName")}</label>
-                    <input
-                      type="text"
-                      value={formData.studentName}
-                      onChange={(e) => setFormData({ ...formData, studentName: e.target.value })}
-                      placeholder={t("studentDashboard.form.studentNamePlaceholder")}
-                      required
-                      className="w-full px-3 py-2.5 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">{t("studentDashboard.form.degreeTitle")}</label>
-                    <input
-                      type="text"
-                      value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      placeholder={t("studentDashboard.form.degreeTitlePlaceholder")}
-                      required
-                      className="w-full px-3 py-2.5 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5 opacity-70">{t("studentDashboard.form.university")}</label>
-                    <input
-                      type="text"
-                      value={formData.college_name}
-                      readOnly
-                      className="w-full px-3 py-2.5 rounded-lg border bg-muted text-sm cursor-not-allowed outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">{t("studentDashboard.form.description")}</label>
-                    <input
-                      type="text"
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder={t("studentDashboard.form.descriptionPlaceholder")}
-                      className="w-full px-3 py-2.5 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    />
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              {/* Matte Overlay */}
+              <div className="absolute inset-0 bg-background/80 backdrop-blur-md" onClick={() => setShowForm(false)} />
+              
+              <ScrollReveal>
+                <form 
+                  onSubmit={handleSubmit} 
+                  className="relative w-full max-w-2xl p-10 rounded-[2.5rem] bg-background border-2 border-border/10 shadow-[0_30px_100px_rgba(0,0,0,0.15)] space-y-8 overflow-y-auto max-h-[90vh]"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-accent mb-1">New Application</div>
+                      <h3 className="font-bold text-3xl tracking-tight">{t("studentDashboard.form.title")}</h3>
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={() => setShowForm(false)}
+                      className="w-12 h-12 rounded-2xl bg-muted/40 hover:bg-muted flex items-center justify-center transition-colors"
+                    >
+                      <XCircle className="w-6 h-6 text-muted-foreground" />
+                    </button>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">{t("studentDashboard.form.entryYear")}</label>
-                    <input
-                      type="text"
-                      value={formData.entryYear}
-                      onChange={(e) => setFormData({ ...formData, entryYear: e.target.value })}
-                      placeholder={t("studentDashboard.form.entryYearPlaceholder")}
-                      required
-                      className="w-full px-3 py-2.5 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">{t("studentDashboard.form.passingYear")}</label>
-                    <input
-                      type="text"
-                      value={formData.passingYear}
-                      onChange={(e) => setFormData({ ...formData, passingYear: e.target.value })}
-                      placeholder={t("studentDashboard.form.passingYearPlaceholder")}
-                      required
-                      className="w-full px-3 py-2.5 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">{t("studentDashboard.form.cgpa")}</label>
-                    <input
-                      type="text"
-                      value={formData.cgpa}
-                      onChange={(e) => setFormData({ ...formData, cgpa: e.target.value })}
-                      placeholder={t("studentDashboard.form.cgpaPlaceholder")}
-                      required
-                      className="w-full px-3 py-2.5 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">{t("studentDashboard.form.credits")}</label>
-                    <input
-                      type="text"
-                      value={formData.credits}
-                      onChange={(e) => setFormData({ ...formData, credits: e.target.value })}
-                      placeholder={t("studentDashboard.form.creditsPlaceholder")}
-                      required
-                      className="w-full px-3 py-2.5 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    />
-                  </div>
-                </div>
+                  <div className="grid sm:grid-cols-2 gap-6">
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1">{t("studentDashboard.form.prnNumber")}</label>
+                      <input
+                        type="text"
+                        value={formData.prn_number}
+                        readOnly
+                        className="w-full px-5 py-3.5 rounded-2xl border bg-muted/50 text-sm font-mono text-accent cursor-not-allowed outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1">{t("studentDashboard.form.studentName")}</label>
+                      <input
+                        type="text"
+                        value={formData.studentName}
+                        onChange={(e) => setFormData({ ...formData, studentName: e.target.value })}
+                        placeholder={t("studentDashboard.form.studentNamePlaceholder")}
+                        required
+                        className="w-full px-5 py-3.5 rounded-2xl border bg-background text-sm font-bold focus:outline-none focus:ring-4 focus:ring-accent/10 focus:border-accent transition-all"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1">{t("studentDashboard.form.degreeTitle")}</label>
+                      <select
+                        value={formData.degree_type}
+                        onChange={(e) =>
+                          setFormData({ ...formData, degree_type: e.target.value as DegreeType | "" })
+                        }
+                        required
+                        className="w-full px-5 py-3.5 rounded-2xl border bg-background text-sm font-bold focus:outline-none focus:ring-4 focus:ring-accent/10 focus:border-accent transition-all appearance-none cursor-pointer"
+                      >
+                        <option value="" disabled>Select degree type…</option>
+                        {DEGREE_TYPE_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1">{t("studentDashboard.form.university")}</label>
+                      <input
+                        type="text"
+                        value={formData.college_name}
+                        readOnly
+                        className="w-full px-5 py-3.5 rounded-2xl border bg-muted/50 text-sm font-bold opacity-60 cursor-not-allowed outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1">{t("studentDashboard.form.description")}</label>
+                      <input
+                        type="text"
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        placeholder={t("studentDashboard.form.descriptionPlaceholder")}
+                        className="w-full px-5 py-3.5 rounded-2xl border bg-background text-sm focus:outline-none focus:ring-4 focus:ring-accent/10 focus:border-accent transition-all"
+                      />
+                    </div>
 
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">{t("studentDashboard.form.degreeDocument")}</label>
-                  <label className="flex items-center gap-3 px-4 py-6 rounded-lg border-2 border-dashed bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors">
-                    <FileText className="w-5 h-5 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">
-                      {file ? file.name : t("studentDashboard.form.degreeDocumentPlaceholder")}
-                    </span>
-                    <input
-                      type="file"
-                      accept=".pdf"
-                      className="hidden"
-                      onChange={(e) => setFile(e.target.files?.[0] || null)}
-                    />
-                  </label>
-                </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1">{t("studentDashboard.form.entryYear")}</label>
+                      <input
+                        type="text"
+                        value={formData.entryYear}
+                        onChange={(e) => setFormData({ ...formData, entryYear: e.target.value })}
+                        placeholder={t("studentDashboard.form.entryYearPlaceholder")}
+                        required
+                        className="w-full px-5 py-3.5 rounded-2xl border bg-background text-sm focus:outline-none focus:ring-4 focus:ring-accent/10 focus:border-accent transition-all"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1">{t("studentDashboard.form.passingYear")}</label>
+                      <input
+                        type="text"
+                        value={formData.passingYear}
+                        onChange={(e) => setFormData({ ...formData, passingYear: e.target.value })}
+                        placeholder={t("studentDashboard.form.passingYearPlaceholder")}
+                        required
+                        className="w-full px-5 py-3.5 rounded-2xl border bg-background text-sm focus:outline-none focus:ring-4 focus:ring-accent/10 focus:border-accent transition-all"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1">{t("studentDashboard.form.cgpa")}</label>
+                      <input
+                        type="text"
+                        value={formData.cgpa}
+                        onChange={(e) => setFormData({ ...formData, cgpa: e.target.value })}
+                        placeholder={t("studentDashboard.form.cgpaPlaceholder")}
+                        required
+                        className="w-full px-5 py-3.5 rounded-2xl border bg-background text-sm font-bold focus:outline-none focus:ring-4 focus:ring-accent/10 focus:border-accent transition-all"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1">{t("studentDashboard.form.credits")}</label>
+                      <input
+                        type="text"
+                        value={formData.credits}
+                        onChange={(e) => setFormData({ ...formData, credits: e.target.value })}
+                        placeholder={t("studentDashboard.form.creditsPlaceholder")}
+                        required
+                        className="w-full px-5 py-3.5 rounded-2xl border bg-background text-sm font-bold focus:outline-none focus:ring-4 focus:ring-accent/10 focus:border-accent transition-all"
+                      />
+                    </div>
+                  </div>
 
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/5 border border-accent/20">
-                  <CreditCard className="w-4 h-4 text-accent shrink-0" />
-                  <p className="text-xs text-muted-foreground">
-                    {t("studentDashboard.form.paymentNote")}
-                  </p>
-                </div>
+                  <div className="flex items-center gap-4 p-5 rounded-2xl bg-accent/[0.03] border border-accent/10">
+                    <CreditCard className="w-5 h-5 text-accent shrink-0" />
+                    <p className="text-[13px] font-medium text-muted-foreground leading-relaxed">
+                      Your university will issue your degree directly using the official cohort records. No further uploads are required from your side.
+                    </p>
+                  </div>
 
-                <div className="flex items-center gap-3">
-                  <button
-                    type="submit"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity active:scale-[0.98]"
-                  >
-                    {t("studentDashboard.form.submitAndPay")}
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowForm(false)}
-                    className="px-4 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-muted transition-colors"
-                  >
-                    {t("common.cancel")}
-                  </button>
-                </div>
-              </form>
-            </ScrollReveal>
+                  <div className="flex items-center gap-4 pt-4">
+                    <button
+                      type="submit"
+                      className="flex-1 inline-flex items-center justify-center gap-3 px-8 py-4 rounded-[1.25rem] bg-accent text-accent-foreground font-bold hover:opacity-90 transition-all shadow-xl shadow-accent/20 active:scale-[0.98]"
+                    >
+                      {t("studentDashboard.form.submitAndPay")}
+                      <ArrowRight className="w-5 h-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowForm(false)}
+                      className="px-8 py-4 rounded-[1.25rem] bg-muted/50 text-muted-foreground font-bold hover:bg-muted transition-colors active:scale-[0.98]"
+                    >
+                      {t("common.cancel")}
+                    </button>
+                  </div>
+                </form>
+              </ScrollReveal>
+            </div>
           )}
 
           <ScrollReveal delay={100}>
@@ -435,7 +474,7 @@ const StudentDashboard: React.FC = () => {
                         {sub.has_document && sub.status === "APPROVED" ? (
                           <button
                             onClick={() => void handleViewDocument(sub.id)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-medium hover:bg-accent/20 transition-colors active:scale-[0.97]"
+                            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-accent/10 text-accent text-[11px] font-bold hover:bg-accent/20 transition-all active:scale-[0.97] border border-accent/20"
                           >
                             <Eye className="w-3 h-3" />
                             {t("studentDashboard.viewApprovedPdf")}

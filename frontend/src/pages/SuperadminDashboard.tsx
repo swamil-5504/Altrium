@@ -41,6 +41,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/context/AuthContext";
 
 interface UserInfo {
   id: string;
@@ -64,6 +65,7 @@ interface CredentialInfo {
 
 const SuperadminDashboard: React.FC = () => {
   const { t } = useTranslation();
+  const { logout } = useAuth();
   const [users, setUsers] = useState<UserInfo[]>([]);
   const [credentials, setCredentials] = useState<CredentialInfo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -221,130 +223,90 @@ const SuperadminDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <div className="min-h-screen bg-background flex">
+      {/* Sidebar Navigation */}
+      <aside className="w-72 border-r bg-background/50 backdrop-blur-xl hidden lg:flex flex-col sticky top-0 h-screen">
+        <div className="p-8">
+          <div className="flex items-center gap-3 mb-10">
+            <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center shadow-lg shadow-accent/20">
+              <Shield className="w-5 h-5 text-accent-foreground" />
+            </div>
+            <div>
+              <h2 className="font-bold text-lg tracking-tight">Altrium</h2>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Super Control</p>
+            </div>
+          </div>
 
-      <div className="pt-20 pb-24">
-        {/* Hero Header */}
-        <div className="relative overflow-hidden border-b bg-card/50 backdrop-blur-sm">
-          <div
-            className="absolute inset-0 opacity-[0.03] dark:opacity-[0.06]"
-            style={{
-              backgroundImage: `radial-gradient(circle at 20% 50%, hsl(var(--accent)) 0%, transparent 50%),
-                                radial-gradient(circle at 80% 20%, hsl(var(--primary)) 0%, transparent 50%)`
-            }}
-          />
-          <div className="container mx-auto px-4 max-w-6xl py-8">
-            <ScrollReveal>
-              <div className="flex flex-col gap-6">
-                <div className="space-y-5">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-accent/20 to-primary/20 border border-accent/20">
-                      <Shield className="w-5 h-5 text-accent" />
-                    </div>
-                    <div className="space-y-1">
-                      <span className="text-xs font-bold uppercase tracking-widest text-accent/80 px-2 py-0.5 rounded-full bg-accent/10 border border-accent/15 inline-flex items-center gap-2">
-                        {t("superadminDashboard.badge")}
-                      </span>
-                      <div className="text-xs text-muted-foreground">{t("superadminDashboard.badgeDescription")}</div>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{t("superadminDashboard.title")}</h1>
-                    <p className="max-w-2xl text-sm text-muted-foreground">
-                      {t("superadminDashboard.subtitle")}
-                    </p>
-                  </div>
-                </div>
+          <nav className="space-y-2">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => { setActiveTab(tab.id); setSearchQuery(""); }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 ${
+                  activeTab === tab.id
+                    ? "bg-accent text-accent-foreground font-bold shadow-lg shadow-accent/10"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}
+              >
+                <tab.icon className="w-5 h-5" />
+                <span className="text-sm">{tab.label}</span>
+                {tab.badge !== null && tab.badge > 0 && (
+                  <span className={`ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    activeTab === tab.id ? "bg-accent-foreground text-accent" : "bg-accent text-accent-foreground"
+                  }`}>
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
+            ))}
+          </nav>
+        </div>
 
-                <div className="space-y-4 min-w-0">
-                  <div className="rounded-3xl border bg-card/90 p-6 shadow-sm min-w-0">
-                    <div className="grid gap-4 lg:grid-cols-[1.4fr_0.9fr] min-w-0">
-                      <div className="space-y-5 min-w-0">
-                        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                          <div className="min-w-0">
-                            <p className="text-xs uppercase tracking-[0.28em] text-muted-foreground">{t("superadminDashboard.platformSnapshot")}</p>
-                            <h2 className="text-2xl font-semibold tracking-tight">{t("superadminDashboard.operationalControlCenter")}</h2>
-                          </div>
-                          <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${pendingAdmins.length > 0 ? "bg-amber-500/15 text-amber-600" : "bg-emerald-500/15 text-emerald-600"}`}>
-                            <span className={`w-2.5 h-2.5 rounded-full ${pendingAdmins.length > 0 ? "bg-amber-500" : "bg-emerald-500"}`} />
-                            {approvalStatusLabel}
-                          </span>
-                        </div>
-                        <p className="max-w-2xl text-sm text-muted-foreground">
-                          {t("superadminDashboard.snapshotDescription")}
-                        </p>
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                          <div className="rounded-2xl border border-border bg-background/80 p-4">
-                            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-3">{t("superadminDashboard.universitiesOnboarded")}</p>
-                            <p className="text-2xl font-semibold tracking-tight">{uniqueUniversities}</p>
-                            <p className="text-xs text-muted-foreground mt-2">{t("superadminDashboard.universitiesOnboardedDesc")}</p>
-                          </div>
-                          <div className="rounded-2xl border border-border bg-background/80 p-4">
-                            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-3">{t("superadminDashboard.recentSignups")}</p>
-                            <p className="text-2xl font-semibold tracking-tight">{recentSignups}</p>
-                            <p className="text-xs text-muted-foreground mt-2">{t("superadminDashboard.recentSignupsDesc")}</p>
-                          </div>
-                          <div className="rounded-2xl border border-border bg-background/80 p-4">
-                            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-3">{t("superadminDashboard.verificationState")}</p>
-                            <p className="text-2xl font-semibold tracking-tight">{approvalStatusLabel}</p>
-                            <p className="text-xs text-muted-foreground mt-2">{t("superadminDashboard.verificationStateDesc")}</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="rounded-3xl border border-border bg-background/90 p-5 min-w-0">
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="p-2 rounded-xl bg-primary/10 border border-primary/15">
-                            <TrendingUp className="w-4 h-4 text-primary" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{t("superadminDashboard.credentialPipeline")}</p>
-                            <h3 className="text-sm font-semibold">{t("superadminDashboard.platformIssuanceHealth")}</h3>
-                          </div>
-                        </div>
-                        <div className="rounded-3xl bg-muted px-4 py-5">
-                          <div className="flex items-center justify-between text-sm text-muted-foreground mb-3">
-                            <span>{t("studentDashboard.approved")}</span>
-                            <span>{credApproved}</span>
-                          </div>
-                          <div className="h-2 rounded-full overflow-hidden bg-border">
-                            <div
-                              className="h-full rounded-full bg-accent transition-all duration-500"
-                              style={{ width: `${approvedRatio}%` }}
-                            />
-                          </div>
-                          <div className="mt-3 text-xs text-muted-foreground">
-                            {credPending} pending · {credRejected} rejected credentials
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap justify-end gap-3">
-                    <button
-                      onClick={() => { setActiveTab("admins"); setSearchQuery(""); }}
-                      className="inline-flex min-w-[180px] items-center gap-2 px-4 py-2 rounded-2xl bg-accent text-accent-foreground font-semibold text-sm hover:opacity-90 transition"
-                    >
-                      <ShieldCheck className="w-4 h-4" />
-                      {t("superadminDashboard.reviewPendingLogins")}
-                    </button>
-                    <button
-                      onClick={() => void fetchUsers(true)}
-                      disabled={refreshing}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border border-border bg-card text-sm text-muted-foreground hover:text-foreground hover:border-accent/30 transition"
-                    >
-                      <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-                      {t("superadminDashboard.refreshData")}
-                    </button>
-                  </div>
-                </div>
+        <div className="mt-auto p-8 border-t border-border/50">
+           <div className="flex items-center gap-3 p-4 rounded-2xl bg-muted/40 border">
+              <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-accent font-bold text-xs">SA</div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold truncate">Super Admin</p>
+                <p className="text-[10px] text-muted-foreground truncate">System Level</p>
               </div>
-            </ScrollReveal>
+           </div>
+        </div>
+      </aside>
+
+      <main className="flex-1 min-w-0 h-screen overflow-y-auto relative">
+        <div className="sticky top-0 z-20 px-8 py-4 bg-background/80 backdrop-blur-md border-b flex items-center justify-between">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Shield className="w-4 h-4" />
+            <span className="text-xs font-bold uppercase tracking-widest">{t("superadminDashboard.title")}</span>
+          </div>
+          <div className="flex items-center gap-4">
+             <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-muted/50 border text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+               System Status: <span className="text-success">Optimal</span>
+             </div>
+             <button
+               onClick={() => void logout()}
+               className="px-4 py-1.5 rounded-xl bg-accent text-accent-foreground text-xs font-bold hover:opacity-90 transition-all shadow-lg shadow-accent/10 active:scale-[0.98]"
+             >
+               Exit & Logout
+             </button>
           </div>
         </div>
 
-        <div className="container mx-auto px-4 max-w-6xl mt-8">
+        {/* Premium Matte Background */}
+        <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-accent/5 blur-[120px]" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-[120px]" />
+        </div>
+
+        <div className="pt-24 pb-24 px-8">
+          <div className="container mx-auto max-w-6xl space-y-8">
+            <ScrollReveal>
+              <div className="flex flex-col gap-2 mb-10">
+                <div className="text-xs font-bold uppercase tracking-[0.4em] text-accent">Management System</div>
+                <h1 className="text-4xl md:text-5xl font-bold tracking-tight">{t("superadminDashboard.title")}</h1>
+                <p className="text-muted-foreground text-sm max-w-2xl mt-2">{t("superadminDashboard.subtitle")}</p>
+              </div>
+            </ScrollReveal>
           {/* Priority Action Banner - only when pending admins exist */}
           {!loading && pendingAdmins.length > 0 && (
             <ScrollReveal>
@@ -370,30 +332,7 @@ const SuperadminDashboard: React.FC = () => {
             </ScrollReveal>
           )}
 
-          {/* Tab Navigation */}
-          <ScrollReveal>
-            <div className="relative flex gap-1 mb-8 p-1.5 bg-muted/60 rounded-2xl border border-border/50 backdrop-blur-sm">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => { setActiveTab(tab.id); setSearchQuery(""); }}
-                  className={`relative flex-1 inline-flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm font-medium transition-all duration-200 ${activeTab === tab.id
-                    ? "bg-background shadow-md text-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-background/40"
-                    }`}
-                >
-                  <tab.icon className="w-4 h-4 flex-shrink-0" />
-                  <span className="hidden sm:inline">{tab.label}</span>
-                  {tab.badge !== null && tab.badge > 0 && (
-                    <span className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold text-white ${activeTab === tab.id ? (tab.badgeColor || "bg-accent") : "bg-muted-foreground/60"
-                      }`}>
-                      {tab.badge}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </ScrollReveal>
+
 
           {/* ---- OVERVIEW TAB ---- */}
           {activeTab === "overview" && (
@@ -925,8 +864,9 @@ const SuperadminDashboard: React.FC = () => {
               )}
             </ScrollReveal>
           )}
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };
