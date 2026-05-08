@@ -173,11 +173,16 @@ const UniversityAdmin: React.FC = () => {
   const totalApproved = approvedCredentials.length;
 
   useEffect(() => {
+    if (!user?.id) return;
     void fetchCredentials();
+    const interval = setInterval(() => {
+      void fetchCredentials(true);
+    }, 10000); // Poll every 10 seconds for asynchronous state updates
+    return () => clearInterval(interval);
   }, [user?.id]);
 
-  const fetchCredentials = async () => {
-    setLoading(true);
+  const fetchCredentials = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const [credRes, studRes] = await Promise.all([
         axios.get("/degrees"),
@@ -187,9 +192,9 @@ const UniversityAdmin: React.FC = () => {
       setStudents(studRes.data);
     } catch (err) {
       console.error(err);
-      toast.error(t("universityDashboard.toasts.loadFailed"));
+      if (!silent) toast.error(t("universityDashboard.toasts.loadFailed"));
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 

@@ -96,6 +96,10 @@ const SuperadminDashboard: React.FC = () => {
 
   useEffect(() => {
     void fetchUsers();
+    const interval = setInterval(() => {
+      void fetchUsers(true);
+    }, 10000); // Poll every 10 seconds for asynchronous state updates
+    return () => clearInterval(interval);
   }, []);
 
   const handleVerifyAdmin = async (userId: string) => {

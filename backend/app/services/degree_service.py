@@ -165,6 +165,7 @@ def _create_footer_overlay(page_width: float, page_height: float, tx_hash: str =
                         qr_x_start + (col_index * box_size),
                         qr_y_start + ((qr_size - 1 - row_index) * box_size),
                         box_size,
+                        box_size,
                         stroke=0,
                         fill=1
                     )
@@ -549,20 +550,23 @@ class DegreeService:
                 detail="Document must be approved before viewing the official approved PDF.",
             )
 
-        with open(credential.document_path, "rb") as pdf_file:
-            reader = PdfReader(pdf_file)
-            writer = PdfWriter()
-            for page in reader.pages:
-                overlay_page = _create_footer_overlay(
-                    float(page.mediabox.width),
-                    float(page.mediabox.height),
-                    tx_hash=credential.tx_hash,
-                    document_uid=credential.document_uid or str(credential.id),
-                )
-                page.merge_page(overlay_page)
-                writer.add_page(page)
+        def _process_pdf():
+            with open(credential.document_path, "rb") as pdf_file:
+                reader = PdfReader(pdf_file)
+                writer = PdfWriter()
+                for page in reader.pages:
+                    overlay_page = _create_footer_overlay(
+                        float(page.mediabox.width),
+                        float(page.mediabox.height),
+                        tx_hash=credential.tx_hash,
+                        document_uid=credential.document_uid or str(credential.id),
+                    )
+                    page.merge_page(overlay_page)
+                    writer.add_page(page)
 
-            output = io.BytesIO()
-            writer.write(output)
-            output.seek(0)
-            return output.read()
+                output = io.BytesIO()
+                writer.write(output)
+                output.seek(0)
+                return output.read()
+
+        return await asyncio.to_thread(_process_pdf)

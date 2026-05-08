@@ -5,7 +5,7 @@ import asyncio
 import io
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse, Response
 
 from app.api.deps.auth import (
     get_current_user,
@@ -215,8 +215,8 @@ async def download_document(
     """Download / view the PDF document for a degree submission."""
     try:
         pdf_bytes = await DegreeService.get_document_with_footer(credential_id, current_user)
-        return StreamingResponse(
-            io.BytesIO(pdf_bytes),
+        return Response(
+            content=pdf_bytes,
             media_type="application/pdf",
             headers={"Content-Disposition": f"inline; filename=degree_{credential_id}.pdf"},
         )
