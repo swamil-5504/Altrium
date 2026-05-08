@@ -72,21 +72,66 @@
       "comingSoon": "Coming soon"
     },
     "links": {
-      "introduction": { "label": "Introduction", "description": "What Altrium is and who it's for." },
-      "quickstart": { "label": "Quickstart", "description": "Stand up the full stack in 15 minutes." },
-      "architecture": { "label": "Architecture", "description": "How the four layers fit together." },
-      "roles": { "label": "User Roles", "description": "Super Admin, University, Student, Employer." },
-      "walkthroughs": { "label": "Walkthroughs", "description": "End-to-end flows for every role." },
-      "apiReference": { "label": "API Reference", "description": "Every REST endpoint, scoped by role." },
-      "smartContracts": { "label": "Smart Contracts", "description": "Registry & SBT ABI surface." },
-      "security": { "label": "Security", "description": "Auth, RBAC, uploads, transport." },
-      "operations": { "label": "Operations", "description": "Envs, logs, database." },
-      "cli": { "label": "CLI & Scripts", "description": "Backend and Foundry tooling." },
-      "support": { "label": "Support", "description": "Troubleshooting, FAQ, contact." },
-      "bulkUploadWizard": { "label": "Bulk Upload Wizard", "description": "Issue an entire graduating cohort in one import." },
-      "emailService": { "label": "Email Service", "description": "Transactional notifications & templated mail." },
-      "languageSupport": { "label": "Language & Script Support", "description": "i18n + non-Latin credential rendering." },
-      "telegramBot": { "label": "Telegram Bot", "description": "Push notifications setup for students." }
+      "introduction": {
+        "label": "Introduction",
+        "description": "What Altrium is and who it's for."
+      },
+      "quickstart": {
+        "label": "Quickstart",
+        "description": "Stand up the full stack in 15 minutes."
+      },
+      "architecture": {
+        "label": "Architecture",
+        "description": "How the four layers fit together."
+      },
+      "roles": {
+        "label": "User Roles",
+        "description": "Super Admin, University, Student, Employer."
+      },
+      "walkthroughs": {
+        "label": "Walkthroughs",
+        "description": "End-to-end flows for every role."
+      },
+      "apiReference": {
+        "label": "API Reference",
+        "description": "Every REST endpoint, scoped by role."
+      },
+      "smartContracts": {
+        "label": "Smart Contracts",
+        "description": "Registry & SBT ABI surface."
+      },
+      "security": {
+        "label": "Security",
+        "description": "Auth, RBAC, uploads, transport."
+      },
+      "operations": {
+        "label": "Operations",
+        "description": "Envs, logs, database."
+      },
+      "cli": {
+        "label": "CLI & Scripts",
+        "description": "Backend and Foundry tooling."
+      },
+      "support": {
+        "label": "Support",
+        "description": "Troubleshooting, FAQ, contact."
+      },
+      "bulkUploadWizard": {
+        "label": "Bulk Upload Wizard",
+        "description": "Issue an entire graduating cohort in one import."
+      },
+      "emailService": {
+        "label": "Email Service",
+        "description": "Transactional notifications & templated mail."
+      },
+      "languageSupport": {
+        "label": "Language & Script Support",
+        "description": "i18n + non-Latin credential rendering."
+      },
+      "telegramBot": {
+        "label": "Telegram Bot",
+        "description": "Push notifications setup for students."
+      }
     }
   },
   "login": {
@@ -368,5 +413,37 @@
     "networkError": "Network error. Please check your connection",
     "unauthorizedAccess": "You don't have permission to access this resource",
     "notFound": "The resource was not found"
+  },
+  "employerVerify": {
+    "title": "Verify a Degree",
+    "subtitle": "Enter a student's PRN or email to check verified credentials. No login required.",
+    "searchPlaceholder": "Enter PRN (e.g. PRN2024001) or Email",
+    "verifying": "Verifying...",
+    "verify": "Verify",
+    "revokedBanner": "This credential has been revoked by the issuing institution and is no longer valid.",
+    "revokedTitle": "Credential Revoked",
+    "revokedSubtitle": "This credential is no longer valid.",
+    "verifiedTitle": "Altrium Verified",
+    "verifiedSubtitle": "Degree anchored on the blockchain (SBT minted).",
+    "studentName": "Student Name",
+    "prn": "PRN",
+    "entryYear": "Entry Year",
+    "cgpa": "CGPA",
+    "offchainNotes": "Off-chain Notes",
+    "university": "University",
+    "degreeTitle": "Degree Title",
+    "passingYear": "Passing Year",
+    "credits": "Credits",
+    "onChainProof": "On-Chain Proof",
+    "tokenId": "Token ID",
+    "txHash": "Tx Hash",
+    "integrityCheck": "Integrity Check",
+    "verifiedHash": "Verified",
+    "failedHash": "Failed",
+    "verifyHash": "Verify Hash",
+    "noRecordFound": "No Record Found",
+    "noRecordFoundDesc1": "No APPROVED degree was found for",
+    "noRecordFoundDesc2": "The admin may not have minted it yet.",
+    "backToDirectory": "Back to Directory"
   }
 }

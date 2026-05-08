@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, UserPlus, Mail, KeyRound, Building2, FileText, Eye, EyeOff, Info } from "lucide-react";
+import { ArrowLeft, UserPlus, Mail, KeyRound, Building2, FileText, Eye, EyeOff, Info, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -22,7 +22,7 @@ export default function Register() {
   const [file, setFile] = useState<File | null>(null);
   const [role, setRole] = useState<"STUDENT" | "ADMIN">(roleFromQuery);
   const [prnNumber, setPrnNumber] = useState("");
-  const [telegramId, setTelegramId] = useState("");
+  const [successData, setSuccessData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [universities, setUniversities] = useState<string[]>([]);
 
@@ -48,27 +48,11 @@ export default function Register() {
 
 
 
-    if (role === "ADMIN" && !file) {
-      toast.error(t('errors.required'));
-      return;
-    }
-
     setLoading(true);
     try {
-      const user = await register(email, password, fullName, role, collegeName, undefined, prnNumber, telegramId);
-
-      if (role === "ADMIN" && file && user?.id) {
-        const formData = new FormData();
-        formData.append("file", file);
-        await axios.post(`/auth/${user.id}/verification-document`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-        toast.success(t('register.successMessage'));
-        navigate("/pending-verification");
-      } else {
-        toast.success(t('register.successMessage'));
-        navigate("/student");
-      }
+      const user = await register(email, password, fullName, role, collegeName, undefined, prnNumber, "");
+      toast.success(t('register.successMessage'));
+      setSuccessData(user);
     } catch (err: unknown) {
       console.error("Registration error:", err);
       let errorMessage = t('register.errorMessage');
@@ -93,12 +77,11 @@ export default function Register() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col justify-center items-center p-4 relative overflow-hidden">
-      <div
-        className="absolute inset-0 opacity-[0.03]"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h60v60H0z' fill='none' stroke='%23000' stroke-width='.5'/%3E%3C/svg%3E")`,
-        }}
-      />
+      {/* Premium Matte Background */}
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-accent/5 blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-[120px]" />
+      </div>
 
 
       <Link
@@ -112,7 +95,7 @@ export default function Register() {
         <LanguageSwitcher />
       </div>
 
-      <div className="w-full max-w-md bg-card border rounded-2xl p-8 surface-elevated z-10 animate-fade-in shadow-xl focus-within:ring-1 focus-within:ring-accent transition-all duration-300">
+      <div className="w-full max-w-md bg-background border-2 border-border/10 rounded-[2rem] p-8 z-10 shadow-[0_20px_50px_rgba(0,0,0,0.08)] transition-all duration-300">
         <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-6">
           <UserPlus className="w-6 h-6 text-accent" />
         </div>
@@ -120,7 +103,7 @@ export default function Register() {
         <h2 className="text-2xl font-bold mb-2">{role === "ADMIN" ? t('register.heading') : t('register.heading')}</h2>
         <p className="text-muted-foreground text-sm mb-6">{t('register.subtitle')}</p>
 
-        <div className="flex bg-muted p-1 rounded-lg mb-6">
+        <div className="flex bg-muted p-1 rounded-lg mb-4">
           <button
             type="button"
             onClick={() => setRole("STUDENT")}
@@ -138,6 +121,15 @@ export default function Register() {
             {t('login.adminRole')}
           </button>
         </div>
+
+        {role === "STUDENT" && (
+          <div className="flex items-center gap-3 px-4 py-3 bg-accent/5 rounded-xl border border-accent/10 mb-6">
+            <div className="w-2 h-2 rounded-full bg-accent" />
+            <span className="text-[11px] font-bold text-accent uppercase tracking-wider">
+               Telegram Identity & Alerts Included
+            </span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
 
@@ -196,49 +188,8 @@ export default function Register() {
             </div>
           )}
 
-          {role === "ADMIN" && (
-            <>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">{t('register.walletAddress')} (PDF)</label>
-                <label className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-dashed border-muted-foreground/20 hover:border-accent hover:bg-accent/5 transition cursor-pointer text-center">
-                  <FileText className="w-5 h-5 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">
-                    {file ? file.name : t('register.prnNumberPlaceholder')}
-                  </span>
-                  <input
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => setFile(e.target.files?.[0] || null)}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-            </>
-          )}
 
-          {role === "STUDENT" && (
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium flex items-center gap-2">
-                Telegram ID for Alerts
-                <div className="group relative">
-                  <Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-popover text-popover-foreground text-[10px] rounded border shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
-                    Get your ID from @userinfobot on Telegram.
-                  </div>
-                </div>
-              </label>
-              <input
-                type="text"
-                className="w-full px-3 py-2.5 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-accent transition-all"
-                placeholder="Ex. 1081709963"
-                value={telegramId}
-                onChange={(e) => setTelegramId(e.target.value)}
-              />
-              <p className="text-[10px] text-muted-foreground">
-                ⚠️ IMPORTANT: Click <b>START</b> on <a href="https://t.me/Altrium_Notification_Bot" target="_blank" rel="noreferrer" className="text-accent hover:underline">@Altrium_Notification_Bot</a> and keep it <b>UNMUTED</b> to receive your degree alerts.
-              </p>
-            </div>
-          )}
+
 
           <div className="space-y-1.5">
             <label className="text-sm font-medium">{t('register.email')}</label>
@@ -280,9 +231,15 @@ export default function Register() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium mt-6 hover:opacity-90 transition-opacity active:scale-[0.99] disabled:opacity-70 disabled:pointer-events-none flex justify-center items-center gap-2"
+            className="w-full px-6 py-2.5 rounded-xl bg-accent text-accent-foreground text-xs font-bold mt-6 hover:opacity-90 transition-all shadow-lg shadow-accent/10 active:scale-[0.98] disabled:opacity-70 disabled:pointer-events-none flex justify-center items-center gap-2"
           >
-            {loading ? t('register.creatingAccount') : t('register.signUp')}
+            {loading ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> {t('register.creatingAccount')}
+              </>
+            ) : (
+              t('register.signUp')
+            )}
           </button>
         </form>
 
@@ -293,6 +250,60 @@ export default function Register() {
           </Link>
         </div>
       </div>
+
+      {/* Success Modal / Overlay */}
+      {successData && (
+        <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-background border-2 border-border/10 rounded-[2.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.15)] p-10 text-center space-y-8">
+            <div className="w-20 h-20 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center mx-auto mb-2">
+               <UserPlus className="w-10 h-10" />
+            </div>
+            
+            <div className="space-y-2">
+              <h2 className="text-3xl font-bold tracking-tight">Account Created!</h2>
+              <p className="text-muted-foreground">Welcome to Altrium, {successData.full_name || "Student"}.</p>
+            </div>
+
+            {successData.role === "STUDENT" ? (
+              <div className="bg-muted/50 rounded-2xl p-6 space-y-4 border">
+                <h3 className="font-semibold text-sm uppercase tracking-wider text-accent">Next Step: Stay Updated</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Connect your Telegram to receive instant alerts when your degree is verified or minted on-chain.
+                </p>
+                
+                <a 
+                  href={successData.telegram_bot_link || `tg://resolve?domain=Altrium_Notification_Bot&start=${successData.telegram_link_token}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block w-full py-2.5 px-5 rounded-xl bg-[#229ED9] text-white text-xs font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#229ED9]/10 active:scale-95"
+                >
+                  <Send className="w-4 h-4" />
+                  Connect Telegram
+                </a>
+                
+                <button 
+                  onClick={() => navigate("/student")}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4"
+                >
+                  I'll do this later, take me to dashboard
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Your administrator account has been created. Please continue to your dashboard to complete the verification process.
+                </p>
+                <button 
+                  onClick={() => navigate("/pending-verification")}
+                  className="w-full py-3 px-6 rounded-xl bg-accent text-accent-foreground text-sm font-bold hover:opacity-90 transition-all shadow-lg shadow-accent/10 active:scale-[0.98]"
+                >
+                  Continue to Dashboard
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

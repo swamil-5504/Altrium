@@ -11,13 +11,24 @@ from .templates import (
     admin_verified_msg,
     degree_approved_msg,
     degree_rejected_msg,
+    degree_acknowledged_msg,
     pending_reminder_msg
 )
+from app.models.models import User
 
+import contextvars
 logger = logging.getLogger(__name__)
+
+# ContextVar to capture responses for the web chat widget
+web_resp: contextvars.ContextVar[str] = contextvars.ContextVar("web_resp", default="")
 
 async def _send_msg(chat_id: str, text: str) -> bool:
     """Core Telegram API call."""
+    if chat_id == "web":
+        # Store for retrieval by the web chat caller
+        web_resp.set(text)
+        return True
+
     if not settings.TELEGRAM_BOT_TOKEN:
         return False
         
@@ -31,12 +42,26 @@ async def _send_msg(chat_id: str, text: str) -> bool:
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(url, json=payload, timeout=5)
+            if response.status_code == 403:
+                # User blocked the bot - clean up the database
+                logger.warning(f"User {chat_id} blocked the bot. Unlinking account.")
+                from app.models.models import User
+                await User.find(User.telegram_id == str(chat_id)).update({"$set": {"telegram_id": None}})
+            elif response.status_code != 200:
+                logger.error(f"Telegram sendMessage failed: {response.status_code} - {response.text}")
             return response.status_code == 200
-    except Exception:
+    except Exception as e:
+        logger.error(f"Telegram sendMessage exception: {e}")
         return False
 
 async def _send_document(chat_id: str, document_bytes: bytes, filename: str, caption: str = "") -> bool:
     """Core Telegram API call to send a document."""
+    if chat_id == "web":
+        # For the web widget, we return a link message instead of the binary
+        # Handled in handlers.py with a direct link now, but this is a fallback
+        web_resp.set(f"{caption}\n\n📄 <b>{filename}</b> is ready. Use the dashboard to download.")
+        return True
+
     if not settings.TELEGRAM_BOT_TOKEN:
         return False
         
@@ -53,9 +78,16 @@ async def _send_document(chat_id: str, document_bytes: bytes, filename: str, cap
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(url, data=data, files=files, timeout=30)
+            if response.status_code == 403:
+                # User blocked the bot - clean up
+                logger.warning(f"User {chat_id} blocked the bot during document send. Unlinking.")
+                from app.models.models import User
+                await User.find(User.telegram_id == str(chat_id)).update({"$set": {"telegram_id": None}})
+            elif response.status_code != 200:
+                logger.error(f"Telegram sendDocument failed: {response.status_code} - {response.text}")
             return response.status_code == 200
     except Exception as e:
-        logger.error(f"Error sending document to Telegram: {e}")
+        logger.error(f"Telegram sendDocument exception: {e}")
         return False
 
 async def notify_registration(student_name: str, chat_id: str = None):
@@ -81,6 +113,11 @@ async def notify_degree_rejection(student_name: str, degree_title: str, reason: 
     """Notify student of degree rejection."""
     if chat_id:
         await _send_msg(chat_id, degree_rejected_msg(student_name, degree_title, reason))
+
+async def notify_degree_acknowledgement(student_name: str, degree_title: str, chat_id: str = None):
+    """Notify student that their document has been received (Bulk Commit)."""
+    if chat_id:
+        await _send_msg(chat_id, degree_acknowledged_msg(student_name, degree_title))
 
 async def notify_pending_reminder(admin_name: str, count: int, college: str, chat_id: str = None):
     """Notify admin of pending tasks."""
@@ -128,3 +165,17 @@ async def process_update(payload: dict):
     logger.info(f"Parsed Telegram message intent: {intent}")
     
     await handle_intent(chat_id, intent, entities)
+    
+async def get_web_chat_response(user: User, text: str) -> str:
+    """
+    Simulates a Telegram interaction for the web widget.
+    Returns the message text that would have been sent to Telegram.
+    """
+    from .nlp_parser import parse_intent
+    from .handlers import handle_intent
+    
+    intent, entities = parse_intent(text)
+    # We pass 'web' as chat_id to trigger our special handling in _send_msg
+    await handle_intent("web", intent, entities, user_override=user)
+    
+    return web_resp.get() or "I'm not sure how to help with that yet."

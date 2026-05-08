@@ -4,10 +4,12 @@ from uuid import UUID
 import asyncio
 import os
 from web3 import Web3
-from app.schemas.schemas import UserResponse, WalletPatchRequest
+from app.schemas.schemas import UserResponse, WalletPatchRequest, UserUpdate
 from app.models.models import User, UserRole
 from app.crud.crud import UserCRUD
 from app.api.deps.auth import get_current_user, require_role, require_verified_admin
+from fastapi import File, UploadFile
+from uuid import uuid4
 from app.core.config import settings
 # Telegram notification service used below via local import
 
@@ -109,15 +111,15 @@ async def verify_admin(
         user.updated_at = datetime.utcnow()
         await user.save()
 
-        from app.services.telegram_bot import service as tg_service
-        # Fire-and-forget notification to the admin
-        asyncio.create_task(
-            tg_service.notify_verification(
-                user.full_name or user.email,
-                user.college_name or "your institution",
-                user.telegram_id
-            )
-        )
+        # from app.services.telegram_bot import service as tg_service
+        # # Fire-and-forget notification to the admin
+        # asyncio.create_task(
+        #     tg_service.notify_verification(
+        #         user.full_name or user.email,
+        #         user.college_name or "your institution",
+        #         user.telegram_id
+        #     )
+        # )
 
         return user
     except HTTPException:
@@ -183,6 +185,53 @@ async def update_wallet_address(
             logging.getLogger(__name__).warning(f"addUniversity on-chain failed after wallet save: {e}")
 
     return current_user
+
+
+@router.patch("/me", response_model=UserResponse)
+async def update_my_profile(
+    body: UserUpdate,
+    current_user: User = Depends(get_current_user),
+):
+    """Update current user's profile information."""
+    if body.full_name is not None:
+        current_user.full_name = body.full_name
+    if body.college_name is not None:
+        current_user.college_name = body.college_name
+    
+    from datetime import datetime
+    current_user.updated_at = datetime.utcnow()
+    await current_user.save()
+    return current_user
+
+
+@router.post("/me/logo", response_model=UserResponse)
+async def upload_college_logo(
+    file: UploadFile = File(...),
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+):
+    """Upload university logo for an admin."""
+    # Ensure uploads directory exists
+    uploads_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "uploads")
+    if not os.path.exists(uploads_dir):
+        os.makedirs(uploads_dir)
+
+    # Generate unique filename
+    ext = os.path.splitext(file.filename or "")[1]
+    filename = f"logo_{current_user.id}_{uuid4().hex[:8]}{ext}"
+    file_path = os.path.join(uploads_dir, filename)
+
+    # Save file
+    with open(file_path, "wb") as f:
+        content = await file.read()
+        f.write(content)
+
+    # Update user
+    current_user.college_logo = f"/uploads/{filename}"
+    from datetime import datetime
+    current_user.updated_at = datetime.utcnow()
+    await current_user.save()
+    return current_user
+
 
 @router.get("/my-students", response_model=List[UserResponse])
 async def get_my_students(

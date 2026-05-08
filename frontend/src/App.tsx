@@ -8,6 +8,7 @@ import StudentDashboard from "./pages/StudentDashboard.tsx";
 import UniversityAdmin from "./pages/UniversityAdmin.tsx";
 import EmployerVerify from "./pages/EmployerVerify.tsx";
 import SuperadminDashboard from "./pages/SuperadminDashboard.tsx";
+import Settings from "./pages/Settings.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Login from "./pages/Login.tsx";
 import Register from "./pages/Register.tsx";
@@ -27,8 +28,7 @@ import DocsOperations from "./pages/docs/sections/Operations.tsx";
 import DocsCli from "./pages/docs/sections/Cli.tsx";
 import DocsSupport from "./pages/docs/sections/Support.tsx";
 import DocsNotifications from "./pages/docs/sections/Notifications.tsx";
-import DocsBulkUpload from "./pages/docs/coming-soon/BulkUploadWizard.tsx";
-import DocsEmailService from "./pages/docs/coming-soon/EmailService.tsx";
+import DocsBulkUpload from "./pages/docs/sections/BulkUploadWizard.tsx";
 import DocsLanguageSupport from "./pages/docs/sections/LanguageSupport.tsx";
 import PendingVerification from "./pages/PendingVerification.tsx";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -99,6 +99,14 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <Settings />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/guide" element={<Web3Guide />} />
             <Route path="/docs" element={<DocsLayout />}>
               <Route index element={<DocsIndex />} />
@@ -115,7 +123,6 @@ const App = () => (
               <Route path="support" element={<DocsSupport />} />
               <Route path="notifications" element={<DocsNotifications />} />
               <Route path="bulk-upload-wizard" element={<DocsBulkUpload />} />
-              <Route path="email-service" element={<DocsEmailService />} />
               <Route path="language-support" element={<DocsLanguageSupport />} />
             </Route>
             <Route path="/pending-verification" element={<PendingVerification />} />

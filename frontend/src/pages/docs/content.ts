@@ -108,7 +108,8 @@ const docsContent = {
               "Register a University Admin account and upload a verification PDF.",
               "Log in as Super Admin and approve the admin.",
               "As the admin, connect MetaMask on Sepolia - triggers the on-chain addUniversity call.",
-              "Register as a Student, submit a degree, let the admin mint it.",
+              "Register as a Student, and link your Telegram account via the dashboard's Magic Link.",
+              "Submit a degree, let the admin mint it, and watch the bot send you a real-time alert.",
               "From any browser, visit /verify and look up by PRN.",
             ],
           },
@@ -465,16 +466,16 @@ const docsContent = {
         bulkUploadWizard: {
           title: "Bulk Upload Wizard",
           tagline:
-            "Issue an entire graduating cohort in one guided import - CSV or XLSX in, queued submissions out.",
+            "Issue an entire graduating cohort in one guided import - CSV or XLSX in, blockchain credentials out.",
           intro:
-            "Today, admins create submissions one at a time. The Bulk Upload Wizard will let a university upload a roster file, preview the parse with inline validation, fix any row-level errors in place, and kick off a queued batch that feeds the normal mint flow. Students still each get their own credential and SBT - just without the per-row grind.",
+            "The Bulk Upload Wizard allows university administrators to bypass manual row-by-row entry. Upload a roster file, validate student data in real-time, and generate a batch of verified degree submissions in seconds.",
           features: [
-            "Drop-in support for XLSX, CSV, and Google Sheets exports.",
-            "Live row-level validation: PRN format, duplicate detection, missing fields.",
-            "Dry-run preview that renders a diff against existing students before anything is written.",
-            "Idempotent batches - re-uploading the same file never double-creates a student.",
-            "Progress dashboard with retry controls for rows that fail verification.",
-            "Optional auto-approve to skip the review step for trusted, pre-verified rosters.",
+            "Direct support for XLSX and CSV roster imports.",
+            "Live row-level validation: PRN format, email syntax, and duplicate detection.",
+            "Interactive Fix: Correct errors (like missing grades) directly in the UI before importing.",
+            "One-Click Batching: Converts valid rows into Pending submissions instantly.",
+            "Privacy First: Student data is only stored off-chain until the final minting step.",
+            "Idempotency: Re-uploading the same file skips students who already have active submissions.",
           ],
         },
         emailService: {

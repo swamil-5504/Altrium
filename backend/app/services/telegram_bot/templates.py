@@ -37,6 +37,14 @@ def degree_rejected_msg(student_name: str, degree_title: str, reason: str = None
         f"Please check your dashboard for details or contact your university admin."
     )
 
+def degree_acknowledged_msg(student_name: str, degree_title: str) -> str:
+    return (
+        f"<b>📄 Document Received</b>\n\n"
+        f"Hello {student_name},\n"
+        f"Your university admin has received your degree document for <b>{degree_title}</b>. "
+        f"It has been moved to the <b>Pending</b> queue for final on-chain verification and minting."
+    )
+
 def pending_reminder_msg(name: str, count: int, college: str) -> str:
     return (
         f"<b>📋 Pending Actions</b>\n\n"

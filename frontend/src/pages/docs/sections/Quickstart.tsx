@@ -67,6 +67,10 @@ CONTRACT_REGISTRY_ADDRESS=0x...
 REGISTRY_ADDRESS=0x...
 PRIVATE_KEY=0x...   # deployer wallet; used to grant UNIVERSITY_ROLE
 
+TELEGRAM_BOT_TOKEN=your_bot_token
+WEBHOOK_HOST=https://your-ngrok-url.ngrok-free.dev
+ALLOWED_HOSTS=your-ngrok-url.ngrok-free.dev,localhost,127.0.0.1
+
 ALLOW_SELF_SERVE_PASSWORD_RESET=false  # must be false in production`}
         />
         <p>{page.sections.environment.frontendLabel}</p>

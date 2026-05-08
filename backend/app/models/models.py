@@ -1,10 +1,10 @@
 from enum import Enum as PyEnum
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID, uuid4
 from datetime import datetime
 
 from beanie import Document, Indexed
-from pydantic import Field
+from pydantic import BaseModel, Field
 from pymongo import IndexModel, ASCENDING
 
 # we keep the same enums so they can be reused in schemas
@@ -15,9 +15,22 @@ class UserRole(str, PyEnum):
     EMPLOYER = "EMPLOYER"
 
 class CredentialStatus(str, PyEnum):
+    REQUESTED = "REQUESTED"
     PENDING = "PENDING"
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
+
+
+class DegreeType(str, PyEnum):
+    BTECH = "BTECH"
+    BSC = "BSC"
+    MTECH = "MTECH"
+    MBA = "MBA"
+
+
+class BulkBatchStatus(str, PyEnum):
+    READY = "READY"
+    COMMITTED = "COMMITTED"
 
 class User(Document):
     id: UUID = Field(default_factory=uuid4)
@@ -31,9 +44,11 @@ class User(Document):
     # to approve + mint credentials.
     is_legal_admin_verified: bool = False
     college_name: Optional[str] = None
+    college_logo: Optional[str] = None
     wallet_address: Optional[str] = None
     verification_document_path: Optional[str] = None
     telegram_id: Optional[str] = None
+    telegram_link_token: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -54,6 +69,8 @@ class Credential(Document):
     tx_hash: Optional[str] = None
     prn_number: Optional[str] = None
     college_name: Optional[str] = None
+    college_logo: Optional[str] = None
+    degree_type: Optional[DegreeType] = None
     revoked: bool = False
     revoked_at: Optional[datetime] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -61,6 +78,35 @@ class Credential(Document):
 
     class Settings:
         name = "credentials"
+
+
+class BulkBatchRow(BaseModel):
+    credential_id: UUID
+    prn_number: str
+    student_name: Optional[str] = None
+    pdf_filename: str
+    pdf_temp_path: str
+    selected: bool = True
+
+
+class BulkBatch(Document):
+    id: UUID = Field(default_factory=uuid4)
+    admin_id: UUID
+    college_name: str
+    degree_type: DegreeType
+    status: BulkBatchStatus = BulkBatchStatus.READY
+    matched_rows: List[BulkBatchRow] = Field(default_factory=list)
+    unmatched_request_ids: List[UUID] = Field(default_factory=list)
+    orphan_pdf_filenames: List[str] = Field(default_factory=list)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    class Settings:
+        name = "bulk_batches"
+        indexes = [
+            IndexModel([("created_at", ASCENDING)], expireAfterSeconds=86400),
+        ]
+
 
 class BlacklistedToken(Document):
     token: str

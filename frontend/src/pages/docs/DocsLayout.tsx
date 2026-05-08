@@ -74,7 +74,7 @@ const DocsLayout = () => {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] gap-10">
+        <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-16">
           {/* Sidebar */}
           <aside
             className={`${
@@ -90,7 +90,7 @@ const DocsLayout = () => {
                 placeholder={t("docsUi.searchPlaceholder")}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className={`w-full pl-8 pr-10 py-2 text-[12.5px] rounded-lg ${palette.panelSoft} border ${palette.border} focus:outline-none focus:ring-2 focus:ring-[#2563eb]/30 dark:focus:ring-[#60a5fa]/30 focus:border-[#2563eb] dark:focus:border-[#60a5fa] ${palette.text} placeholder:${palette.textFaint} transition-colors`}
+                className={`w-full pl-10 pr-10 py-3 text-[14px] rounded-xl ${palette.panelSoft} border ${palette.border} focus:outline-none focus:ring-4 focus:ring-[#2563eb]/10 dark:focus:ring-[#60a5fa]/5 focus:border-[#2563eb] dark:focus:border-[#60a5fa] ${palette.text} placeholder:${palette.textFaint} transition-all`}
               />
               <kbd
                 className={`absolute right-2 top-1/2 -translate-y-1/2 text-[10px] px-1.5 py-0.5 rounded ${palette.kbd} ${palette.textFaint} font-mono`}
@@ -99,35 +99,35 @@ const DocsLayout = () => {
               </kbd>
             </div>
 
-            <nav className="text-sm space-y-1">
+            <nav className="text-sm space-y-2">
               {filteredGroups.map((g) => {
                 const Icon = g.icon;
                 const open = openGroups[g.id] ?? true;
                 const activeInside = g.links.some((l) => l.to === location.pathname);
                 return (
-                  <div key={g.id}>
+                  <div key={g.id} className="mb-2">
                     <button
                       onClick={() => setOpenGroups((o) => ({ ...o, [g.id]: !open }))}
-                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[12.5px] font-semibold tracking-tight transition-colors ${
-                        activeInside ? palette.text : `${palette.textMuted} hover:${palette.text}`
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[14px] font-bold tracking-tight transition-all ${
+                        activeInside ? palette.text : `${palette.textMuted} hover:${palette.text} hover:bg-muted/5`
                       }`}
                     >
-                      <Icon className={`h-3.5 w-3.5 ${activeInside ? palette.accent : ""}`} />
+                      <Icon className={`h-4 w-4 ${activeInside ? palette.accent : ""}`} />
                       <span className="flex-1 text-left">{g.label}</span>
                       <ChevronDown
-                        className={`h-3 w-3 transition-transform ${open ? "" : "-rotate-90"} ${palette.textFaint}`}
+                        className={`h-3.5 w-3.5 transition-transform ${open ? "" : "-rotate-90"} ${palette.textFaint}`}
                       />
                     </button>
                     {open && (
-                      <ul className={`ml-4 my-1 border-l ${palette.borderSoft}`}>
+                      <ul className={`ml-5 my-2 border-l-2 ${palette.borderSoft}`}>
                         {g.links.map((l) => (
                           <li key={l.to}>
                             <NavLink
                               to={l.to}
                               className={({ isActive }) =>
-                                `block pl-3 py-1 -ml-px border-l text-[12.5px] transition-colors ${
+                                `block pl-4 py-1.5 -ml-[2px] border-l-2 text-[13.5px] transition-all ${
                                   isActive
-                                    ? `${palette.accentBorder} ${palette.accent} font-medium`
+                                    ? `${palette.accentBorder} ${palette.accent} font-bold`
                                     : `border-transparent ${palette.textMuted} hover:${palette.text} hover:border-[#d6d2c7] dark:hover:border-[#2a2a2e]`
                                 }`
                               }

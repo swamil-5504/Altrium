@@ -6,10 +6,14 @@ export interface IUser {
   id: string;
   email: string;
   full_name: string | null;
-  role: "ADMIN" | "STUDENT" | "SUPERADMIN";
+  role: "ADMIN" | "STUDENT" | "SUPERADMIN" | "EMPLOYER";
   college_name: string | null;
+  college_logo: string | null;
   wallet_address: string | null;
   prn_number: string | null;
+  telegram_id: string | null;
+  telegram_link_token: string | null;
+  telegram_bot_link: string | null;
   is_active: boolean;
   is_legal_admin_verified?: boolean;
   created_at: string;

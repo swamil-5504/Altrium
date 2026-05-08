@@ -130,8 +130,12 @@
     box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
   }
 
+  .matte-panel {
+    @apply bg-background border border-border shadow-[0_2px_10px_-3px_rgba(0,0,0,0.07)];
+  }
+
   .blockchain-glow {
-    box-shadow: 0 0 0 1px hsl(var(--accent) / 0.15), 0 4px 16px -2px hsl(var(--accent) / 0.1);
+    box-shadow: 0 0 0 1px hsl(var(--border) / 0.5), 0 2px 8px -1px hsl(var(--primary) / 0.05);
   }
 
   .verified-badge {

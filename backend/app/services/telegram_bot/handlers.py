@@ -1,25 +1,50 @@
 import logging
-from app.models.models import User, Credential, CredentialStatus
+from app.models.models import User, Credential, CredentialStatus, UserRole
 from .service import _send_msg, _send_document
 
 logger = logging.getLogger(__name__)
 
-async def handle_intent(chat_id: str, intent: str, entities: dict):
-    """Routes the intent to the appropriate handler function."""
+async def handle_intent(chat_id: str, intent: str, entities: dict, user_override: User = None):
+    """
+    Routes the intent to the appropriate handler function.
+    If user_override is provided, we use that user (for web chat).
+    Returns the message string if chat_id is 'web'.
+    """
+    web_mode = (chat_id == "web")
+    responses = []
     
+    def _collect(msg: str):
+        responses.append(msg)
+
     # 1. Identify User
-    user = await User.find_one(User.telegram_id == str(chat_id))
+    user = user_override or await User.find_one(User.telegram_id == str(chat_id))
     
-    if intent == "start":
+    # 2. Restrict to Students Only (except for the start/linking flow)
+    if user and user.role != UserRole.STUDENT and intent not in ("start", "start_with_token"):
+        await _send_msg(
+            chat_id,
+            "⚠️ <b>Access Restricted</b>\n\n"
+            "This Telegram Assistant is currently reserved for <b>Students</b> only. "
+            "Please use the Altrium Web Dashboard for Administrative tasks."
+        )
+        return
+
+    if intent == "start" or intent == "start_with_token":
+        token = entities.get("token")
+        if token:
+            await _handle_token_linking(chat_id, token)
+            return
+            
         await _send_msg(
             chat_id, 
             "🎓 <b>Welcome to Altrium Verification Bot!</b>\n\n"
             "I can help you check your degree status. Try asking:\n"
             "- 'Show my pending degrees'\n"
             "- 'What degrees have been minted?'\n"
-            "- 'Show all my degrees'\n"
             "- 'Get my degree pdf'\n"
-            "- 'Account status'"
+            "- 'Account status'\n\n"
+            "💡 <b>Need to link your account?</b>\n"
+            "Go to your Altrium Dashboard and click 'Link Telegram'."
         )
         return
 
@@ -127,12 +152,54 @@ async def _handle_get_degree_pdf(chat_id: str, user: User):
             continue
             
         try:
-            pdf_bytes = await DegreeService.get_document_with_footer(deg.id, user)
-            caption = f"Here is your official PDF for <b>{deg.title}</b>"
-            filename = f"degree_{deg.title.replace(' ', '_')}.pdf"
-            success = await _send_document(chat_id, pdf_bytes, filename, caption)
-            if not success:
-                await _send_msg(chat_id, f"❌ Failed to send PDF for <b>{deg.title}</b>.")
+            # Special handling for Web mode: give a direct API link
+            if chat_id == "web":
+                from app.core.config import settings
+                base_url = settings.WEBHOOK_HOST or "http://localhost:8000"
+                link = f"{base_url}/api/v1/degrees/{deg.id}/pdf"
+                await _send_msg(chat_id, f"✅ <b>{deg.title}</b> is ready!\n\n🔗 <a href='{link}' target='_blank'>Click here to download PDF</a>")
+            else:
+                pdf_bytes = await DegreeService.get_document_with_footer(deg.id, user)
+                caption = f"Here is your official PDF for <b>{deg.title}</b>"
+                filename = f"degree_{deg.title.replace(' ', '_')}.pdf"
+                await _send_document(chat_id, pdf_bytes, filename, caption)
         except Exception as e:
             logger.error(f"Error fetching PDF for telegram bot: {e}")
             await _send_msg(chat_id, f"❌ Error retrieving PDF for <b>{deg.title}</b>.")
+
+async def _handle_token_linking(chat_id: str, token: str):
+    user = await User.find_one(User.telegram_link_token == token)
+    if not user:
+        await _send_msg(
+            chat_id, 
+            "❌ <b>Invalid or Expired Token</b>\n\n"
+            "Please go to your Altrium dashboard and click 'Link Telegram' again to get a fresh link."
+        )
+        return
+        
+    # Role Restriction: Only students can link Telegram
+    if user.role != UserRole.STUDENT:
+        await _send_msg(
+            chat_id,
+            "⚠️ <b>Access Restricted</b>\n\n"
+            "Telegram notifications are currently available for <b>Students</b> only."
+        )
+        return
+
+    # 1-to-1 Enforcement: Clear this telegram_id from any other accounts first
+    str_chat_id = str(chat_id)
+    await User.find(User.telegram_id == str_chat_id).update({"$set": {"telegram_id": None}})
+    
+    # Link the account
+    user.telegram_id = str_chat_id
+    user.telegram_link_token = None  # Clear token after use
+    from datetime import datetime
+    user.updated_at = datetime.utcnow()
+    await user.save()
+    
+    await _send_msg(
+        chat_id,
+        f"✅ <b>Connection Successful!</b>\n\n"
+        f"Hello {user.full_name or user.email}, your Telegram account is now securely linked to Altrium. "
+        "I will now notify you here whenever your degree status changes."
+    )

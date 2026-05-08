@@ -28,19 +28,42 @@ def _to_response(cred) -> dict:
     return data
 
 
+async def _enrich_creds_with_logos(creds: List[Credential]) -> List[dict]:
+    """Helper to fetch current college logos for a list of credentials."""
+    unique_colleges = list(set(c.college_name for c in creds if c.college_name))
+    logo_map = {}
+    if unique_colleges:
+        admins = await User.find(
+            User.role == UserRole.ADMIN,
+            {"college_name": {"$in": unique_colleges}}
+        ).to_list()
+        for admin in admins:
+            if admin.college_name and admin.college_logo:
+                logo_map[admin.college_name] = admin.college_logo
+
+    results = []
+    for c in creds:
+        data = _to_response(c)
+        if c.college_name in logo_map:
+            data["college_logo"] = logo_map[c.college_name]
+        results.append(data)
+    return results
+
+
 @router.post("/", response_model=CredentialResponse)
 async def create_degree(
     credential_create: CredentialCreate,
     current_user: User = Depends(require_role(UserRole.STUDENT)),
 ):
     cred = await DegreeService.create_submission(credential_create, current_user)
-    return _to_response(cred)
+    enriched = await _enrich_creds_with_logos([cred])
+    return enriched[0]
 
 
 @router.get("/", response_model=List[CredentialResponse])
 async def get_degrees(current_user: User = Depends(get_current_user)):
     creds = await DegreeService.list_for_user(current_user)
-    return [_to_response(c) for c in creds]
+    return await _enrich_creds_with_logos(creds)
 
 
 @router.get("/public", response_model=List[CredentialResponse])
@@ -52,7 +75,7 @@ async def get_public_degrees(request: Request, prn_number: str = None, email: st
         creds = await DegreeService.get_public_by_email(email)
     else:
         creds = await DegreeService.get_all_public()
-    return [_to_response(c) for c in creds]
+    return await _enrich_creds_with_logos(creds)
 
 
 @router.get("/{credential_id}", response_model=CredentialResponse)
@@ -61,7 +84,8 @@ async def get_degree(
     current_user: User = Depends(get_current_user),
 ):
     cred = await DegreeService.get_by_id_for_user(credential_id, current_user)
-    return _to_response(cred)
+    enriched = await _enrich_creds_with_logos([cred])
+    return enriched[0]
 
 
 async def _notify_degree_rejected(cred) -> None:
