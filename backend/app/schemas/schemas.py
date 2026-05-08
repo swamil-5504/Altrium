@@ -6,13 +6,11 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
-
 class UserRole(str, Enum):
     ADMIN = "ADMIN"
     STUDENT = "STUDENT"
     SUPERADMIN = "SUPERADMIN"
     EMPLOYER = "EMPLOYER"
-
 
 class CredentialStatus(str, Enum):
     REQUESTED = "REQUESTED"
@@ -20,18 +18,15 @@ class CredentialStatus(str, Enum):
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
 
-
 class DegreeType(str, Enum):
     BTECH = "BTECH"
     BSC = "BSC"
     MTECH = "MTECH"
     MBA = "MBA"
 
-
 class BulkBatchStatus(str, Enum):
     READY = "READY"
     COMMITTED = "COMMITTED"
-
 
 # ---------------------------------------------------------------------------
 # Regex patterns
@@ -46,13 +41,11 @@ TX_HASH_PATTERN = r"^0x[a-fA-F0-9]{64}$"
 # and to keep PDF rendering bounded.
 _CTRL_CHARS_RE = re.compile(r"[\x00-\x1f\x7f]")
 
-
 def _strip_control(value: Optional[str]) -> Optional[str]:
     if value is None:
         return None
     cleaned = _CTRL_CHARS_RE.sub("", value).strip()
     return cleaned or None
-
 
 # ---------------------------------------------------------------------------
 # User schemas
@@ -72,10 +65,8 @@ class UserBase(BaseModel):
     def _scrub_text(cls, v):
         return _strip_control(v) if isinstance(v, str) else v
 
-
 class UserCreate(UserBase):
     password: str
-
 
 class UserUpdate(BaseModel):
     full_name: Optional[str] = Field(None, max_length=100)
@@ -87,12 +78,6 @@ class UserUpdate(BaseModel):
     @classmethod
     def _scrub_text(cls, v):
         return _strip_control(v) if isinstance(v, str) else v
-
-
-
-
-
-
 
 class UserResponse(BaseModel):
     id: UUID
@@ -131,10 +116,8 @@ class UserResponse(BaseModel):
         data["telegram_bot_link"] = self.telegram_bot_link
         return data
 
-
 class WalletPatchRequest(BaseModel):
     wallet_address: str = Field(..., pattern=WALLET_ADDRESS_PATTERN)
-
 
 # ---------------------------------------------------------------------------
 # Credential schemas
@@ -149,7 +132,6 @@ class CredentialBase(BaseModel):
     def _scrub_text(cls, v):
         return _strip_control(v) if isinstance(v, str) else v
 
-
 class CredentialCreate(CredentialBase):
     issued_to_id: Optional[UUID] = None
     token_id: Optional[int] = Field(None, ge=0)
@@ -162,7 +144,6 @@ class CredentialCreate(CredentialBase):
     @classmethod
     def _scrub_college(cls, v):
         return _strip_control(v) if isinstance(v, str) else v
-
 
 class CredentialUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=200)
@@ -177,7 +158,6 @@ class CredentialUpdate(BaseModel):
     @classmethod
     def _scrub_text(cls, v):
         return _strip_control(v) if isinstance(v, str) else v
-
 
 class CredentialResponse(CredentialBase):
     id: UUID
@@ -205,7 +185,6 @@ class CredentialResponse(CredentialBase):
     class Config:
         from_attributes = True
 
-
 # ---------------------------------------------------------------------------
 # Auth schemas
 # ---------------------------------------------------------------------------
@@ -216,35 +195,26 @@ class TokenResponse(BaseModel):
     expires_in: int
     refresh_expires_in: int
 
-
 class LoginRequest(BaseModel):
     email: str
     password: str
     ignore_verification: bool = False
 
-
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
-
 class RegisterRequest(UserCreate):
     pass
-
 
 class _PasswordPayload(BaseModel):
 
     new_password: str = Field(...)
 
-
-
-
 class ForgotPasswordRequest(_PasswordPayload):
     email: str
 
-
 class ChangePasswordRequest(_PasswordPayload):
     old_password: str
-
 
 # ---------------------------------------------------------------------------
 # Bulk upload schemas
@@ -258,14 +228,12 @@ class RequestedRowResponse(BaseModel):
     metadata_json: Optional[dict] = None
     created_at: datetime
 
-
 class BulkMatchedRow(BaseModel):
     credential_id: UUID
     prn_number: str
     student_name: Optional[str] = None
     pdf_filename: str
     selected: bool = True
-
 
 class BulkMatchResponse(BaseModel):
     batch_id: UUID
@@ -275,17 +243,14 @@ class BulkMatchResponse(BaseModel):
     orphan_pdf_filenames: List[str]
     created_at: datetime
 
-
 class BulkCommitRequest(BaseModel):
     deselected_credential_ids: List[UUID] = Field(default_factory=list)
-
 
 class BulkCommitResultRow(BaseModel):
     credential_id: UUID
     prn_number: str
     status: str
     error: Optional[str] = None
-
 
 class BulkCommitResponse(BaseModel):
     batch_id: UUID

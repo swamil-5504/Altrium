@@ -21,12 +21,10 @@ from app.services.degree_service import DegreeService
 
 router = APIRouter(prefix=f"{settings.API_V1_STR}/degrees", tags=["degrees"])
 
-
 def _to_response(cred) -> dict:
     data = cred.model_dump()
     data["has_document"] = bool(cred.document_path)
     return data
-
 
 async def _enrich_credential_data(creds: List[Credential], include_verification: bool = False) -> List[dict]:
     """Helper to fetch current college logos and optionally verify blockchain integrity."""
@@ -54,7 +52,6 @@ async def _enrich_credential_data(creds: List[Credential], include_verification:
     
     return results
 
-
 @router.post("/", response_model=CredentialResponse)
 async def create_degree(
     credential_create: CredentialCreate,
@@ -64,12 +61,10 @@ async def create_degree(
     enriched = await _enrich_credential_data([cred])
     return enriched[0]
 
-
 @router.get("/", response_model=List[CredentialResponse])
 async def get_degrees(current_user: User = Depends(get_current_user)):
     creds = await DegreeService.list_for_user(current_user)
     return await _enrich_credential_data(creds, include_verification=False)
-
 
 @router.get("/public", response_model=List[CredentialResponse])
 @limiter.limit("30/minute")
@@ -82,7 +77,6 @@ async def get_public_degrees(request: Request, prn_number: str = None, email: st
         creds = await DegreeService.get_all_public()
     return await _enrich_credential_data(creds, include_verification=True)
 
-
 @router.get("/{credential_id}", response_model=CredentialResponse)
 async def get_degree(
     credential_id: UUID,
@@ -91,7 +85,6 @@ async def get_degree(
     cred = await DegreeService.get_by_id_for_user(credential_id, current_user)
     enriched = await _enrich_credential_data([cred], include_verification=True)
     return enriched[0]
-
 
 async def _notify_degree_rejected(cred) -> None:
     """Helper to fetch student and send rejection notice."""
@@ -135,7 +128,6 @@ async def _notify_degree_approved(cred) -> None:
     except Exception:
         pass  # Non-critical — logged inside notification service
 
-
 @router.patch("/{credential_id}/status", response_model=CredentialResponse)
 async def update_degree_status(
     credential_id: UUID,
@@ -149,7 +141,6 @@ async def update_degree_status(
         asyncio.create_task(_notify_degree_approved(cred))
 
     return _to_response(cred)
-
 
 @router.patch("/{credential_id}", response_model=CredentialResponse)
 async def update_degree(
@@ -167,7 +158,6 @@ async def update_degree(
 
     return _to_response(cred)
 
-
 @router.delete("/{credential_id}")
 async def delete_degree(
     credential_id: UUID,
@@ -175,7 +165,6 @@ async def delete_degree(
 ):
     await DegreeService.delete(credential_id)
     return {"detail": "Degree deleted"}
-
 
 @router.patch("/{credential_id}/revoke", response_model=CredentialResponse)
 async def revoke_degree(
@@ -195,7 +184,6 @@ async def revoke_degree(
     await cred.save()
     return _to_response(cred)
 
-
 @router.post("/{credential_id}/reset", response_model=CredentialResponse)
 async def reset_degree(
     credential_id: UUID,
@@ -204,7 +192,6 @@ async def reset_degree(
     """Reset a degree submission after on-chain burn (test phase toggle)."""
     cred = await DegreeService.reset_submission(credential_id)
     return _to_response(cred)
-
 
 # ---- Document upload & download ----
 
@@ -219,7 +206,6 @@ async def upload_document(
     """Upload a PDF document for a degree submission."""
     cred = await DegreeService.upload_document(credential_id, file, current_user)
     return _to_response(cred)
-
 
 @router.get("/{credential_id}/document")
 async def download_document(

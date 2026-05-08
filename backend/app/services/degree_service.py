@@ -60,7 +60,6 @@ REGISTRY_ABI = [
     }
 ]
 
-
 async def _verify_blockchain_transaction(tx_hash: str, expected_college_id_hash: str) -> bool:
     """
     Verifies that the transaction with the given hash:
@@ -123,11 +122,8 @@ async def _verify_blockchain_transaction(tx_hash: str, expected_college_id_hash:
             detail=f"Error verifying blockchain transaction: {str(e)}"
         )
 
-
-
 def _ensure_upload_dir() -> None:
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-
 
 def _create_footer_overlay(page_width: float, page_height: float, tx_hash: str = None, document_uid: str = None):
     packet = io.BytesIO()
@@ -169,7 +165,6 @@ def _create_footer_overlay(page_width: float, page_height: float, tx_hash: str =
                         qr_x_start + (col_index * box_size),
                         qr_y_start + ((qr_size - 1 - row_index) * box_size),
                         box_size,
-                        box_size,
                         stroke=0,
                         fill=1
                     )
@@ -185,7 +180,6 @@ def _create_footer_overlay(page_width: float, page_height: float, tx_hash: str =
     packet.seek(0)
     overlay = PdfReader(packet)
     return overlay.pages[0]
-
 
 class DegreeService:
     @staticmethod
@@ -222,7 +216,6 @@ class DegreeService:
             
         # Students see everything they've submitted
         return await CredentialCRUD.get_by_user(current_user.id)
-
 
     @staticmethod
     async def reset_submission(credential_id: UUID) -> Credential:
@@ -274,7 +267,6 @@ class DegreeService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized",
             )
-
 
         return credential
 
