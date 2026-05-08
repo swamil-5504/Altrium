@@ -1,9 +1,11 @@
 from enum import Enum as PyEnum
 from typing import List, Optional
+from typing import List, Optional
 from uuid import UUID, uuid4
 from datetime import datetime
 
 from beanie import Document, Indexed
+from pydantic import BaseModel, Field
 from pydantic import BaseModel, Field
 from pymongo import IndexModel, ASCENDING
 
@@ -16,9 +18,22 @@ class UserRole(str, PyEnum):
 
 class CredentialStatus(str, PyEnum):
     REQUESTED = "REQUESTED"
+    REQUESTED = "REQUESTED"
     PENDING = "PENDING"
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
+
+
+class DegreeType(str, PyEnum):
+    BTECH = "BTECH"
+    BSC = "BSC"
+    MTECH = "MTECH"
+    MBA = "MBA"
+
+
+class BulkBatchStatus(str, PyEnum):
+    READY = "READY"
+    COMMITTED = "COMMITTED"
 
 
 class DegreeType(str, PyEnum):
@@ -50,6 +65,7 @@ class User(Document):
     verification_document_path: Optional[str] = None
     telegram_id: Optional[str] = None
     telegram_link_token: Optional[str] = None
+    telegram_link_token: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -70,6 +86,8 @@ class Credential(Document):
     tx_hash: Optional[str] = None
     prn_number: Optional[str] = None
     college_name: Optional[str] = None
+    college_logo: Optional[str] = None
+    degree_type: Optional[DegreeType] = None
     college_logo: Optional[str] = None
     degree_type: Optional[DegreeType] = None
     revoked: bool = False

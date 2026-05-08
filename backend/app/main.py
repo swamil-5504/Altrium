@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 import os
+from fastapi.staticfiles import StaticFiles
+import os
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
@@ -90,6 +92,8 @@ import asyncio as _asyncio
 
 # Weekly reminder task removed
 
+# Weekly reminder task removed
+
 
 
 @asynccontextmanager
@@ -137,6 +141,7 @@ async def lifespan(app: FastAPI):
         logger.error("Admin seeding failed: %s", str(e))
 
     # Start the weekly reminder background task
+    # _reminder_task = _asyncio.create_task(_weekly_pending_reminder_loop())
     # _reminder_task = _asyncio.create_task(_weekly_pending_reminder_loop())
     logger.info("📱 Notification service initialized (Telegram %s)",
                 "active" if settings.TELEGRAM_BOT_TOKEN else "not configured")
@@ -187,6 +192,7 @@ app.add_middleware(
 # API routes
 app.include_router(auth.router)
 app.include_router(users.router)
+app.include_router(degrees_bulk.router)
 app.include_router(degrees_bulk.router)
 app.include_router(degrees.router)
 app.include_router(telegram.router)
