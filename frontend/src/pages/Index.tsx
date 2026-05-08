@@ -89,13 +89,6 @@ const Index = () => {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
-                to="/student"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity active:scale-[0.98]"
-              >
-                {t("home.studentCta")}
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link
                 to="/verify"
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border bg-card text-foreground font-medium text-sm hover:bg-muted transition-colors active:scale-[0.98]"
               >

@@ -1,9 +1,11 @@
 from enum import Enum as PyEnum
 from typing import List, Optional
+from typing import List, Optional
 from uuid import UUID, uuid4
 from datetime import datetime
 
 from beanie import Document, Indexed
+from pydantic import BaseModel, Field
 from pydantic import BaseModel, Field
 from pymongo import IndexModel, ASCENDING
 
@@ -16,9 +18,22 @@ class UserRole(str, PyEnum):
 
 class CredentialStatus(str, PyEnum):
     REQUESTED = "REQUESTED"
+    REQUESTED = "REQUESTED"
     PENDING = "PENDING"
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
+
+
+class DegreeType(str, PyEnum):
+    BTECH = "BTECH"
+    BSC = "BSC"
+    MTECH = "MTECH"
+    MBA = "MBA"
+
+
+class BulkBatchStatus(str, PyEnum):
+    READY = "READY"
+    COMMITTED = "COMMITTED"
 
 
 class DegreeType(str, PyEnum):
@@ -44,10 +59,12 @@ class User(Document):
     # to approve + mint credentials.
     is_legal_admin_verified: bool = False
     college_name: Optional[str] = None
+    institution_id: Optional[UUID] = None
     college_logo: Optional[str] = None
     wallet_address: Optional[str] = None
     verification_document_path: Optional[str] = None
     telegram_id: Optional[str] = None
+    telegram_link_token: Optional[str] = None
     telegram_link_token: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
@@ -69,6 +86,8 @@ class Credential(Document):
     tx_hash: Optional[str] = None
     prn_number: Optional[str] = None
     college_name: Optional[str] = None
+    college_logo: Optional[str] = None
+    degree_type: Optional[DegreeType] = None
     college_logo: Optional[str] = None
     degree_type: Optional[DegreeType] = None
     revoked: bool = False
@@ -106,6 +125,23 @@ class BulkBatch(Document):
         indexes = [
             IndexModel([("created_at", ASCENDING)], expireAfterSeconds=86400),
         ]
+
+
+class Institution(Document):
+    """Accredited issuer registry. Admins must register against an entry here
+    so we can prove the issuer claim (e.g. "Harvard University") corresponds to
+    a real, accredited institution rather than free-text. Existing admins
+    pre-dating this registry are grandfathered (institution_id stays None)."""
+    id: UUID = Field(default_factory=uuid4)
+    name: str = Indexed(unique=True)
+    accreditation_id: Optional[str] = None
+    accreditation_body: Optional[str] = None
+    country: str = "IN"
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    class Settings:
+        name = "institutions"
 
 
 class BlacklistedToken(Document):

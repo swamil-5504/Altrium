@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 import os
+from fastapi.staticfiles import StaticFiles
+import os
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
@@ -14,8 +16,9 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from beanie import init_beanie
 from app.crud.crud import UserCRUD
 from app.schemas.schemas import UserCreate
-from app.models.models import UserRole, BlacklistedToken, BulkBatch
-from app.api.routes import auth, users, degrees, telegram, degrees_bulk
+from app.models.models import UserRole, BlacklistedToken, BulkBatch, Institution
+from app.api.routes import auth, users, degrees, telegram, degrees_bulk, institutions
+from app.services.institution_seed import seed_institutions_if_empty
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from app.core.limiter import limiter
@@ -89,6 +92,8 @@ import asyncio as _asyncio
 
 # Weekly reminder task removed
 
+# Weekly reminder task removed
+
 
 
 @asynccontextmanager
@@ -104,7 +109,14 @@ async def lifespan(app: FastAPI):
     # Drop legacy non-TTL indexes BEFORE Beanie tries to (re)create them.
     await _reconcile_blacklist_indexes(db)
     # initialize beanie with our document models
-    await init_beanie(database=db, document_models=[models.User, models.Credential, models.BlacklistedToken, BulkBatch])
+    await init_beanie(database=db, document_models=[models.User, models.Credential, models.BlacklistedToken, BulkBatch, Institution])
+
+    # Idempotent: only seeds if the collection is empty. Safe to run on every
+    # deploy; will not overwrite manually-added institutions.
+    try:
+        await seed_institutions_if_empty()
+    except Exception as e:
+        logger.warning(f"Institution seed skipped: {e}")
 
 
     # Seed a generic Superadmin
@@ -129,6 +141,7 @@ async def lifespan(app: FastAPI):
         logger.error("Admin seeding failed: %s", str(e))
 
     # Start the weekly reminder background task
+    # _reminder_task = _asyncio.create_task(_weekly_pending_reminder_loop())
     # _reminder_task = _asyncio.create_task(_weekly_pending_reminder_loop())
     logger.info("📱 Notification service initialized (Telegram %s)",
                 "active" if settings.TELEGRAM_BOT_TOKEN else "not configured")
@@ -180,8 +193,10 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(degrees_bulk.router)
+app.include_router(degrees_bulk.router)
 app.include_router(degrees.router)
 app.include_router(telegram.router)
+app.include_router(institutions.router)
 
 # Serve static files (logos, docs)
 uploads_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "uploads")

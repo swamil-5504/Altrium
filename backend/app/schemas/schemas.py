@@ -194,6 +194,11 @@ class CredentialResponse(CredentialBase):
     has_document: bool = False
     revoked: bool = False
     revoked_at: Optional[datetime] = None
+    server_verified: bool = False
+    on_chain_hash: Optional[str] = None
+    hash_match: bool = False
+    institution_accredited: bool = False
+    institution_accreditation_id: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

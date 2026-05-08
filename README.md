@@ -26,6 +26,14 @@ Altrium is a full-stack blockchain-powered degree verification platform built as
 
 ---
 
+## Issuer Trust Model
+
+Altrium binds every issuing university to an entry in an **accreditation registry** (UGC / AICTE / MoE seeded list). Admin registration is rejected if the submitted `college_name` does not match an active registry entry, preventing a bad actor from signing up as "Harvard University" and minting fraudulent credentials. The registry is seeded idempotently on startup from `app/services/institution_seed.py` and exposed via `GET /api/v1/institutions`. Verified credentials surface an "Accredited" badge on the public verify page.
+
+Existing admins predating this gate are grandfathered (their `institution_id` stays unset) — login and existing degree display are unchanged. New admins get `institution_id` auto-populated and `college_name` snapped to the canonical registry casing for deterministic on-chain hashing.
+
+---
+
 ## Prerequisites
 
 - Docker & Docker Compose (Recommended)

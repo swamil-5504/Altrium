@@ -62,6 +62,16 @@ export default function Login() {
         return;
       }
 
+      if (userRole !== role) {
+        await logout();
+        toast.error(
+          role === "STUDENT"
+            ? "This account is not a student account. Please use the Admin login."
+            : "This account is not an admin account. Please use the Student login."
+        );
+        return;
+      }
+
       if (userRole === "ADMIN") {
         if (!me.data.is_legal_admin_verified) {
           navigate("/pending-verification");
