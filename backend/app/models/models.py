@@ -1,11 +1,9 @@
 from enum import Enum as PyEnum
 from typing import List, Optional
-from typing import List, Optional
 from uuid import UUID, uuid4
 from datetime import datetime
 
 from beanie import Document, Indexed
-from pydantic import BaseModel, Field
 from pydantic import BaseModel, Field
 from pymongo import IndexModel, ASCENDING
 
@@ -18,30 +16,15 @@ class UserRole(str, PyEnum):
 
 class CredentialStatus(str, PyEnum):
     REQUESTED = "REQUESTED"
-    REQUESTED = "REQUESTED"
     PENDING = "PENDING"
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
 
-
 class DegreeType(str, PyEnum):
     BTECH = "BTECH"
     BSC = "BSC"
     MTECH = "MTECH"
     MBA = "MBA"
-
-
-class BulkBatchStatus(str, PyEnum):
-    READY = "READY"
-    COMMITTED = "COMMITTED"
-
-
-class DegreeType(str, PyEnum):
-    BTECH = "BTECH"
-    BSC = "BSC"
-    MTECH = "MTECH"
-    MBA = "MBA"
-
 
 class BulkBatchStatus(str, PyEnum):
     READY = "READY"
@@ -65,7 +48,6 @@ class User(Document):
     verification_document_path: Optional[str] = None
     telegram_id: Optional[str] = None
     telegram_link_token: Optional[str] = None
-    telegram_link_token: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -88,8 +70,6 @@ class Credential(Document):
     college_name: Optional[str] = None
     college_logo: Optional[str] = None
     degree_type: Optional[DegreeType] = None
-    college_logo: Optional[str] = None
-    degree_type: Optional[DegreeType] = None
     revoked: bool = False
     revoked_at: Optional[datetime] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -98,7 +78,6 @@ class Credential(Document):
     class Settings:
         name = "credentials"
 
-
 class BulkBatchRow(BaseModel):
     credential_id: UUID
     prn_number: str
@@ -106,7 +85,6 @@ class BulkBatchRow(BaseModel):
     pdf_filename: str
     pdf_temp_path: str
     selected: bool = True
-
 
 class BulkBatch(Document):
     id: UUID = Field(default_factory=uuid4)
@@ -126,7 +104,6 @@ class BulkBatch(Document):
             IndexModel([("created_at", ASCENDING)], expireAfterSeconds=86400),
         ]
 
-
 class Institution(Document):
     """Accredited issuer registry. Admins must register against an entry here
     so we can prove the issuer claim (e.g. "Harvard University") corresponds to
@@ -142,7 +119,6 @@ class Institution(Document):
 
     class Settings:
         name = "institutions"
-
 
 class BlacklistedToken(Document):
     token: str
